@@ -2,9 +2,9 @@
 
 Fantasy GM is a fantasy sports analytics and management platform designed to connect real fantasy league data with schedule, player, matchup, and roster intelligence. The initial integration targets Yahoo Fantasy Hockey.
 
-**Status: early development.** This repository contains the project foundation
-only. Package namespaces, development tools, and documentation are ready; the
-capabilities below are planned and are not implemented.
+**Status: early development.** The project foundation and Yahoo OAuth component
+are implemented and tested with mocked HTTP. Live Yahoo access has not been
+verified; the fantasy-data capabilities below are planned and are not implemented.
 
 ## Planned capabilities
 
@@ -31,8 +31,9 @@ out of the core. Sport intelligence will provide sport-specific context. Policy
 will hold transaction safety rules when transaction functionality is introduced.
 MCP will expose core capabilities to AI clients as an interface.
 
-All namespaces are lightweight placeholders. Pydantic is reserved for future
-domain/configuration models; httpx is reserved for future HTTP integrations.
+Yahoo OAuth configuration uses Pydantic; the Yahoo provider uses httpx for token
+requests. The domain, sport intelligence, strategy, optimization, policy, and MCP
+namespaces remain lightweight placeholders.
 See [the architecture document](docs/architecture.md) for the intended boundaries.
 
 ## Development setup
@@ -55,9 +56,28 @@ uv run mypy
 Commit `uv.lock` to keep dependency versions reproducible. Build distributions
 with `uv build` when needed.
 
-`.env.example` contains blank placeholders for future Yahoo configuration.
-Nothing currently reads these variables, and credentials are not needed to run
-the scaffold or its checks.
+## Yahoo OAuth foundation
+
+Credentials will be supplied through the `YAHOO_CLIENT_ID`, `YAHOO_CLIENT_SECRET`,
+and `YAHOO_REDIRECT_URI` environment variables. Never commit their real values.
+`YahooOAuthConfig.from_environment()` validates these variables explicitly;
+it does not read `.env` files or supply fallback credentials. `.env.example`
+continues to contain blank placeholders only. Tests require no Yahoo credentials
+and block live httpx transports.
+
+`YahooOAuthClient` in `providers.yahoo.oauth` accepts configuration and a
+caller-owned `httpx.Client`. It builds authorization URLs, exchanges authorization
+codes, and refreshes tokens using Yahoo's documented
+[authorization code flow](https://developer.yahoo.com/oauth2/guide/flows_authcode/).
+Use a mock transport for testing. The caller must supply unpredictable OAuth
+`state` and validate the returned state before exchanging a code; callback
+handling is not implemented here.
+
+Token values are held in memory as Pydantic `SecretStr` fields, which mask normal
+representation and JSON serialization. `expires_in` records the token lifetime
+in seconds. There is no token storage, automatic refresh, browser flow, or fantasy
+API access. Never log tokens, authorization codes, HTTP auth headers, or request
+and response bodies; debug tooling can bypass model masking.
 
 ## Security
 
