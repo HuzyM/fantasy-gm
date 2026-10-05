@@ -33,10 +33,10 @@ Fantasy GM Core
 
 | Namespace | Intended responsibility |
 | --- | --- |
-| `config` | Pydantic configuration models as configuration is introduced. |
+| `config` | Explicit Pydantic configuration, including Yahoo OAuth environment settings. |
 | `domain` | Fantasy GM's own Pydantic domain types. |
 | `providers` | Provider access and normalization into domain types. |
-| `providers.yahoo` | Yahoo-specific transport and models. |
+| `providers.yahoo` | Yahoo OAuth transport and token models; future Fantasy API integration. |
 | `sports` / `sports.nhl` | Sport-specific schedule, player, and matchup context. |
 | `strategy` | Analysis consuming domain types. |
 | `optimizer` | Weekly roster optimization consuming domain types. |
@@ -61,16 +61,47 @@ Fantasy GM Core
 
 ## Incremental implementation
 
-Implement only what each approved task needs. The current modules contain only
-package docstrings; there are no speculative models, provider protocols, plugin
-registries, or dependency injection frameworks. Define concrete models and
-interfaces when actual integrations establish their requirements.
+Implement only what each approved task needs. FGM-002 adds explicit Yahoo OAuth
+configuration and a small Yahoo-specific OAuth client. All other namespaces
+remain package placeholders. There are no speculative domain models, provider
+protocols, plugin registries, or dependency injection frameworks.
+
+### Yahoo OAuth boundary
+
+OAuth transport, endpoints, token models, and narrowly scoped errors live in
+`providers.yahoo.oauth`. The domain layer does not import them. OAuth credentials
+are read explicitly by `config.yahoo.YahooOAuthConfig`; no environment loading
+occurs during imports, and `.env` is not loaded automatically.
+
+The OAuth client receives a caller-owned `httpx.Client`, allowing tests to inject
+`httpx.MockTransport` without another dependency. Token requests use HTTP Basic
+client authentication and form encoding per Yahoo's
+[OAuth authorization code documentation](https://developer.yahoo.com/oauth2/guide/flows_authcode/).
+Requests have a bounded timeout, do not follow redirects, and are not retried
+automatically. Errors omit provider bodies and underlying transport messages.
+
+Tokens use masked `SecretStr` fields and exist only in memory. Expiration is
+represented as the returned `expires_in` lifetime in seconds. Additional Yahoo
+response fields are ignored rather than promoted into domain models. Refresh
+responses preserve any newly issued refresh token; if Yahoo omits one, the
+returned optional field is `None`. Retaining a previous refresh token when
+appropriate belongs to a future token lifecycle caller, not this transport.
+
+The authorization URL requires caller-supplied state; generating, retaining, and
+validating unpredictable state belongs to a future authorization flow. Redirect
+URIs preserve their exact configured spelling and support HTTP(S) URLs or Yahoo's
+documented `oob` value. No callback server or live authentication flow is included.
+
+Before league discovery, verify app approval and Fantasy Sports permissions,
+registered redirect/callback support (including whether `oob` is accepted for this
+app), current PKCE requirements, and actual token response/refresh behavior with
+approved credentials. Mocked tests verify protocol construction, not live access.
 
 The current foundation uses Python 3.12+, a `src/` package layout, uv dependency
 management and its build backend, Pydantic, and httpx. Pytest, Ruff, and strict
 mypy provide development checks. `pyproject.toml` holds project/tool settings;
 `uv.lock` holds resolved dependency versions.
 
-No OAuth, API requests, NHL integration, strategy, optimization, transaction
-execution, browser automation, database, frontend, Docker, or autonomous agents
-are implemented in this scaffold.
+No Yahoo Fantasy API requests, league discovery, NHL integration, strategy,
+optimization, transaction execution, browser automation, token persistence,
+database, frontend, Docker, MCP tools, or autonomous agents are implemented.
