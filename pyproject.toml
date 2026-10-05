@@ -1,0 +1,38 @@
+[project]
+name = "fantasy-gm"
+version = "0.1.0"
+description = "Provider-independent fantasy sports analytics and management."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { file = "LICENSE" }
+dependencies = [
+    "httpx>=0.28,<1",
+    "pydantic>=2,<3",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.23,<0.13"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "mypy>=1,<2",
+    "pytest>=8,<10",
+    "ruff>=0.15,<1",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.mypy]
+python_version = "3.12"
+files = ["src", "tests"]
+strict = true

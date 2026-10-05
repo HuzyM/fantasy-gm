@@ -1,0 +1,47 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+.aws/
+.credentials/
+credentials/
+secrets/
+tokens/
+cookies/
+*.pem
+*.key
+
+# Personal provider data and generated output
+data/
+local/
+logs/
+*.log
+
+# Python, environments, caches, and build artifacts
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.tools/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+build/
+dist/
+*.egg-info/
+.tox/
+.nox/
+
+# Editor and operating system artifacts
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+Desktop.ini
