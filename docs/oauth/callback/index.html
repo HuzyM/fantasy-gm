@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="referrer" content="no-referrer">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'">
+    <link rel="icon" href="data:,">
+    <title>Yahoo authorization — Fantasy GM</title>
+    <script>
+      (() => {
+        // Capture only in memory, then replace this history entry before rendering.
+        const url = new URL(window.location.href);
+        const code = url.searchParams.get("code");
+        const state = url.searchParams.get("state");
+        const error = url.searchParams.get("error");
+        const description = url.searchParams.get("error_description");
+        for (const parameter of ["code", "state", "error", "error_description"]) {
+          url.searchParams.delete(parameter);
+        }
+        try {
+          window.history.replaceState(null, "", url.pathname + url.search + url.hash);
+        } catch {
+          // Do not display sensitive data if the URL cannot be cleared.
+          document.addEventListener("DOMContentLoaded", () => {
+            document.getElementById("message").textContent =
+              "Unable to clear authorization data from the URL. Close this tab and return to Fantasy GM.";
+          });
+          return;
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+          const message = document.getElementById("message");
+          if (error !== null || description !== null) {
+            message.textContent = "Yahoo authorization was not completed.";
+            document.getElementById("error-panel").hidden = false;
+            document.getElementById("error").textContent = error || "Authorization error";
+            document.getElementById("error-description").textContent =
+              description || "Yahoo did not provide an error description.";
+          } else if (code) {
+            message.textContent = "Yahoo authorization received";
+            document.getElementById("code-panel").hidden = false;
+            const codeField = document.getElementById("authorization-code");
+            codeField.value = code;
+            document.getElementById("copy-code").addEventListener("click", async () => {
+              const copyStatus = document.getElementById("copy-status");
+              try {
+                await navigator.clipboard.writeText(code);
+                copyStatus.textContent =
+                  "Authorization code copied. Return to the local Fantasy GM application.";
+              } catch {
+                codeField.focus();
+                codeField.select();
+                copyStatus.textContent =
+                  "Clipboard access was unavailable. Copy the selected code manually, then return to the local Fantasy GM application.";
+              }
+            });
+          } else {
+            message.textContent = "No Yahoo authorization code was received.";
+          }
+          if (state !== null) {
+            document.getElementById("state-panel").hidden = false;
+            document.getElementById("returned-state").textContent = state || "(empty)";
+          }
+        });
+      })();
+    </script>
+    <style>
+      body { max-width: 38rem; margin: 3rem auto; padding: 0 1.25rem; font: 1rem/1.6 system-ui, sans-serif; color: #20252b; background: #fafafa; }
+      h1 { font-size: 1.6rem; line-height: 1.25; }
+      h2, label { font-size: 1rem; font-weight: 600; }
+      textarea { display: block; box-sizing: border-box; width: 100%; min-height: 6rem; margin: .5rem 0 1rem; padding: .75rem; font: .9rem/1.5 monospace; border: 1px solid #aab1b9; border-radius: .25rem; background: white; }
+      button { padding: .65rem 1rem; font: inherit; cursor: pointer; color: white; background: #1757a6; border: 0; border-radius: .25rem; }
+      button:focus-visible, textarea:focus-visible { outline: 3px solid #1757a6; outline-offset: 3px; }
+      pre { white-space: pre-wrap; overflow-wrap: anywhere; font: .9rem/1.5 monospace; }
+      .note { color: #454e58; }
+      [hidden] { display: none; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Fantasy GM · Yahoo authorization</h1>
+      <p id="message" role="status">Reading the Yahoo authorization response…</p>
+      <noscript><p>JavaScript is required to display the response and remove sensitive parameters from the URL. Close this tab if JavaScript is disabled.</p></noscript>
+      <section id="code-panel" hidden>
+        <label for="authorization-code">Authorization code</label>
+        <textarea id="authorization-code" readonly autocomplete="off" spellcheck="false"></textarea>
+        <button id="copy-code" type="button">Copy Authorization Code</button>
+        <p id="copy-status" role="status"></p>
+      </section>
+      <section id="error-panel" hidden>
+        <h2>Authorization error</h2>
+        <pre id="error"></pre>
+        <p id="error-description"></p>
+      </section>
+      <section id="state-panel" hidden>
+        <h2>Returned state</h2>
+        <pre id="returned-state"></pre>
+      </section>
+      <p>After copying the code, return to the local Fantasy GM application, verify the returned state against the state from your authorization request, and close this tab.</p>
+      <p class="note">Authorization codes are temporary credentials. Keep this code private. This page does not exchange it, send it elsewhere, or save authorization data. Copying is only performed when you press the button. No league or player data is displayed.</p>
+    </main>
+  </body>
+</html>

@@ -70,14 +70,46 @@ caller-owned `httpx.Client`. It builds authorization URLs, exchanges authorizati
 codes, and refreshes tokens using Yahoo's documented
 [authorization code flow](https://developer.yahoo.com/oauth2/guide/flows_authcode/).
 Use a mock transport for testing. The caller must supply unpredictable OAuth
-`state` and validate the returned state before exchanging a code; callback
-handling is not implemented here.
+`state` and validate the returned state before exchanging a code. The static
+callback page described below supports manual code transfer only; the local
+application does not yet implement a complete authorization flow.
 
 Token values are held in memory as Pydantic `SecretStr` fields, which mask normal
 representation and JSON serialization. `expires_in` records the token lifetime
 in seconds. There is no token storage, automatic refresh, browser flow, or fantasy
 API access. Never log tokens, authorization codes, HTTP auth headers, or request
 and response bodies; debug tooling can bypass model masking.
+
+### Yahoo Developer callback page
+
+Yahoo Developer redirect URI (including the trailing slash):
+
+```text
+https://huzym.github.io/fantasy-gm/oauth/callback/
+```
+
+The static page in `docs/oauth/callback/index.html` displays the authorization
+code, returned state, or Yahoo error. It removes `code`, `state`, `error`, and
+`error_description` from the current browser URL before displaying the response.
+Copy the code, verify the returned state against your original local request,
+and return to the local Fantasy GM application. State is displayed, not validated
+by this page. Refreshing the cleaned URL discards the response.
+
+The page has no API calls, external scripts, analytics, or browser storage.
+Authorization data is kept in memory; copying to the clipboard happens only on
+request. Treat the code and clipboard contents as sensitive and close the tab
+after use. GitHub Pages receives the initial redirect URL as the hosting provider;
+client-side URL cleanup cannot erase hosting infrastructure logs.
+
+After these files are merged into `main`, enable GitHub Pages under repository
+**Settings → Pages → Build and deployment**. Choose **Deploy from a branch**,
+branch **main**, folder **/docs**, and **Save**. Wait for deployment and confirm
+the exact HTTPS callback URL opens before using it for registration. Leave the
+custom domain unset to retain the URL above and enable **Enforce HTTPS** when
+available. See [GitHub's publishing-source instructions](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site).
+
+This page does not change Yahoo OAuth configuration, implement token exchange,
+or introduce league discovery.
 
 ## Security
 
