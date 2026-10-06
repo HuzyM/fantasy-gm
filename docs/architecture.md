@@ -90,7 +90,17 @@ appropriate belongs to a future token lifecycle caller, not this transport.
 The authorization URL requires caller-supplied state; generating, retaining, and
 validating unpredictable state belongs to a future authorization flow. Redirect
 URIs preserve their exact configured spelling and support HTTP(S) URLs or Yahoo's
-documented `oob` value. No callback server or live authentication flow is included.
+documented `oob` value. No callback server or complete local authentication flow
+is included.
+
+The static GitHub Pages callback at
+`https://huzym.github.io/fantasy-gm/oauth/callback/` is a manual handoff page in
+`docs/oauth/callback/index.html`. It displays a code/state or error using text-only
+rendering and removes OAuth query parameters from the current history entry.
+It does not transmit, persist, exchange, or validate the response; the user copies
+the code and returns to the local application. State validation remains the
+local caller's responsibility. The initial redirect is still received by the
+hosting provider. This static page adds no dependency to the core or provider.
 
 Before league discovery, verify app approval and Fantasy Sports permissions,
 registered redirect/callback support (including whether `oob` is accepted for this
