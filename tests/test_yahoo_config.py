@@ -1,94 +1,60 @@
-"""Configuration tests use only explicitly fake credentials."""
+"""Public Client configuration; no real credentials are used."""
 
 from pathlib import Path
 
 import pytest
 from pydantic import ValidationError
 
-from fantasy_gm.config.yahoo import YahooOAuthConfig
-
-ENVIRONMENT = {
-    "YAHOO_CLIENT_ID": "fake-client-id-for-tests",
-    "YAHOO_CLIENT_SECRET": "fake-client-secret-for-tests",
-    "YAHOO_REDIRECT_URI": "http://localhost:8080/callback",
-}
+from fantasy_gm.config.yahoo import YAHOO_REDIRECT_URI, YahooOAuthConfig
 
 
-def set_environment(monkeypatch: pytest.MonkeyPatch) -> None:
-    for key, value in ENVIRONMENT.items():
-        monkeypatch.setenv(key, value)
-
-
-def test_configuration_loads_explicit_environment(
+def test_client_id_is_the_only_required_environment_value(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    set_environment(monkeypatch)
+    monkeypatch.setenv("YAHOO_CLIENT_ID", "fake-client-id-for-tests")
     config = YahooOAuthConfig.from_environment()
-    assert config.client_id == ENVIRONMENT["YAHOO_CLIENT_ID"]
-    assert config.client_secret.get_secret_value() == ENVIRONMENT["YAHOO_CLIENT_SECRET"]
-    assert config.redirect_uri == ENVIRONMENT["YAHOO_REDIRECT_URI"]
-    assert ENVIRONMENT["YAHOO_CLIENT_SECRET"] not in repr(config)
-    assert ENVIRONMENT["YAHOO_CLIENT_SECRET"] not in config.model_dump_json()
+    assert config.client_id == "fake-client-id-for-tests"
+    assert config.redirect_uri == YAHOO_REDIRECT_URI
+    assert "client_secret" not in YahooOAuthConfig.model_fields
 
 
-@pytest.mark.parametrize("key", ENVIRONMENT)
-def test_missing_configuration_is_clear(
-    monkeypatch: pytest.MonkeyPatch, key: str
+@pytest.mark.parametrize("value", [None, "", "   "])
+def test_missing_or_blank_id_is_clear(
+    monkeypatch: pytest.MonkeyPatch, value: str | None
 ) -> None:
-    set_environment(monkeypatch)
-    monkeypatch.delenv(key)
-    with pytest.raises(ValidationError, match=key):
+    if value is not None:
+        monkeypatch.setenv("YAHOO_CLIENT_ID", value)
+    with pytest.raises(ValidationError, match="YAHOO_CLIENT_ID"):
         YahooOAuthConfig.from_environment()
 
 
-@pytest.mark.parametrize("key", ENVIRONMENT)
-@pytest.mark.parametrize("value", ["", "   "])
-def test_blank_configuration_is_rejected(
-    monkeypatch: pytest.MonkeyPatch, key: str, value: str
+def test_legacy_environment_values_are_not_used(
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    set_environment(monkeypatch)
-    monkeypatch.setenv(key, value)
-    with pytest.raises(ValidationError, match=key) as error:
-        YahooOAuthConfig.from_environment()
-    assert ENVIRONMENT["YAHOO_CLIENT_SECRET"] not in str(error.value)
+    monkeypatch.setenv("YAHOO_CLIENT_ID", "fake-client-id-for-tests")
+    monkeypatch.setenv("YAHOO_CLIENT_SECRET", "fake-obsolete-secret-for-tests")
+    monkeypatch.setenv("YAHOO_REDIRECT_URI", "https://example.test/wrong-callback")
+    config = YahooOAuthConfig.from_environment()
+    assert config.redirect_uri == YAHOO_REDIRECT_URI
+    assert "fake-obsolete-secret" not in repr(config)
 
 
-@pytest.mark.parametrize(
-    "uri",
-    [
-        "not-a-url",
-        "ftp://example.test/callback",
-        "https://example.test/#fragment",
-        "https://user:fake-password@example.test/callback",
-        "https://:fake-password@example.test/callback",
-        "https://example.test/call\nback",
-    ],
-)
-def test_invalid_redirect_uri_is_rejected(
-    monkeypatch: pytest.MonkeyPatch, uri: str
-) -> None:
-    set_environment(monkeypatch)
-    monkeypatch.setenv("YAHOO_REDIRECT_URI", uri)
-    with pytest.raises(ValidationError, match="YAHOO_REDIRECT_URI"):
-        YahooOAuthConfig.from_environment()
+def test_unknown_secret_configuration_is_rejected() -> None:
+    with pytest.raises(ValidationError, match="client_secret"):
+        YahooOAuthConfig.model_validate(
+            {"client_id": "fake-id", "client_secret": "fake-secret"}
+        )
 
 
-@pytest.mark.parametrize("uri", ["https://example.test", "oob"])
-def test_redirect_uri_is_preserved_exactly(
-    monkeypatch: pytest.MonkeyPatch, uri: str
-) -> None:
-    set_environment(monkeypatch)
-    monkeypatch.setenv("YAHOO_REDIRECT_URI", uri)
-    assert YahooOAuthConfig.from_environment().redirect_uri == uri
+def test_redirect_override_is_rejected() -> None:
+    with pytest.raises(ValidationError, match="redirect_uri"):
+        YahooOAuthConfig.model_validate({"client_id": "fake-id", "redirect_uri": "oob"})
 
 
-def test_configuration_does_not_read_dotenv(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
+def test_dotenv_is_not_read(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     monkeypatch.chdir(tmp_path)
     (tmp_path / ".env").write_text(
-        "\n".join(f"{key}={value}" for key, value in ENVIRONMENT.items()),
-        encoding="utf-8",
+        "YAHOO_CLIENT_ID=fake-id-for-tests", encoding="utf-8"
     )
     with pytest.raises(ValidationError, match="YAHOO_CLIENT_ID"):
         YahooOAuthConfig.from_environment()
