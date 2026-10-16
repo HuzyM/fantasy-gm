@@ -133,7 +133,7 @@ def _show(
         print("Yahoo Fantasy Sports — data provided by Yahoo. PRIVATE; do not share.")
         print("\n".join(rows[start : start + 12]))
         next_start = start + 12
-        if start + 12 < len(rows):
+        if read_input is not None or start + 12 < len(rows):
             if read_input is None:
                 if _read_hidden_input("Type NEXT to continue, or CANCEL: ") != "NEXT":
                     raise KeyboardInterrupt()

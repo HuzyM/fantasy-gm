@@ -109,8 +109,10 @@ def test_private_session_reuses_schedule_for_player_and_team_views(
     continuations = iter(["NEX", "NEXT"])
     cancel_selections = iter(["1", "1", "CANCEL"])
     authorizations: list[None] = []
+    team_pages: Iterator[str] = iter(())
 
     def answer(prompt: str) -> str:
+        nonlocal team_pages
         if "attest and approve" in prompt:
             return next(approvals) if mistakes else "APPROVE PRIVATE READ-ONLY"
         if "Start date" in prompt:
@@ -118,7 +120,15 @@ def test_private_session_reuses_schedule_for_player_and_team_views(
         if "End date" in prompt:
             return next(ends) if mistakes else "2026-10-22"
         if "session command" in prompt:
-            return next(menu)
+            command = next(menu)
+            if mistakes and command == "3":
+                # The 32-team selector has three pages. Revisit its final page.
+                team_pages = iter(["NEXT", "NEXT", "BACK", "NEXT", "NEXT"])
+            return command
+        if prompt == "Type NEXT, BACK, or CANCEL: " and mistakes:
+            action = next(team_pages, None)
+            if action is not None:
+                return action
         if "Selection number" in prompt:
             if cancel:
                 return next(cancel_selections)

@@ -23,7 +23,7 @@ def test_ordinary_input_uses_visible_terminal_reader(
 def test_selection_retries_invalid_values_without_echoing_them(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    answers = iter(["", "invented-sensitive-value", "0", "99", "1"])
+    answers = iter(["NEXT", "", "invented-sensitive-value", "0", "99", "1"])
     assert (
         verify_nhl._choose(
             "Select", ("First", "Second"), read_input=lambda _: next(answers)
@@ -38,7 +38,7 @@ def test_selection_retries_invalid_values_without_echoing_them(
 def test_pagination_retries_and_goes_back_to_previous_page(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    answers = iter(["typo", "NEXT", "BACK", "NEXT", "NEXT"])
+    answers = iter(["typo", "NEXT", "BACK", "NEXT", "NEXT", "NEXT"])
     verify_nhl._show(
         tuple(f"Row {i}" for i in range(25)), read_input=lambda _: next(answers)
     )
@@ -57,7 +57,7 @@ def test_selection_explicit_navigation(action: str) -> None:
 
 
 def test_initial_selection_back_retries_without_restarting() -> None:
-    answers = iter(["BACK", "1"])
+    answers = iter(["NEXT", "BACK", "1"])
     assert (
         verify_nhl._choose("Select", ("First",), read_input=lambda _: next(answers))
         == 0
