@@ -275,16 +275,19 @@ def _run_private(ttl_seconds: float) -> None:
         except _BackRequested:
             pass
         while True:
-            _show(
-                (
-                    "1: Roster summary",
-                    "2: Select roster player",
-                    "3: Select NHL team",
-                    "4: Change date window",
-                    "5: Refresh schedule (spends credits)",
-                    "6: Exit",
+            try:
+                _show(
+                    (
+                        "1: Roster summary",
+                        "2: Select roster player",
+                        "3: Select NHL team",
+                        "4: Change date window",
+                        "5: Refresh schedule (spends credits)",
+                        "6: Exit",
+                    )
                 )
-            )
+            except _BackRequested:
+                continue
             while True:
                 command = _read_visible_input(
                     "Choose session command 1-6, BACK, or CANCEL: "

@@ -110,9 +110,11 @@ def test_private_session_reuses_schedule_for_player_and_team_views(
     cancel_selections = iter(["1", "1", "CANCEL"])
     authorizations: list[None] = []
     team_pages: Iterator[str] = iter(())
+    menu_page_back = False
+    retry_menu_page = False
 
     def answer(prompt: str) -> str:
-        nonlocal team_pages
+        nonlocal team_pages, menu_page_back, retry_menu_page
         if "attest and approve" in prompt:
             return next(approvals) if mistakes else "APPROVE PRIVATE READ-ONLY"
         if "Start date" in prompt:
@@ -125,7 +127,15 @@ def test_private_session_reuses_schedule_for_player_and_team_views(
                 # The 32-team selector has three pages. Revisit its final page.
                 team_pages = iter(["NEXT", "NEXT", "BACK", "NEXT", "NEXT"])
             return command
+        if "BACK to the menu" in prompt and mistakes and not menu_page_back:
+            # Finish the initial view; the next page displayed is the session menu.
+            retry_menu_page = True
+            return "NEXT"
         if prompt == "Type NEXT, BACK, or CANCEL: " and mistakes:
+            if retry_menu_page:
+                retry_menu_page = False
+                menu_page_back = True
+                return "BACK"
             action = next(team_pages, None)
             if action is not None:
                 return action
@@ -173,7 +183,7 @@ def test_private_session_reuses_schedule_for_player_and_team_views(
     assert len(puck_calls) == (2 if cancel else 4)
     assert len(authorizations) == 1
     if mistakes:
-        assert "Invalid" in private
+        assert "Invalid" in private and menu_page_back
     if not cancel:
         assert private.count("CACHE_HIT") >= 2 and "CACHE_REFRESH" in private
     assert "Invented Skater" in private and "COVERAGE_UNVERIFIED" in private
