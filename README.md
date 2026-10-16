@@ -2,20 +2,17 @@
 
 Fantasy GM is a fantasy sports analytics and management platform designed to connect real fantasy league data with schedule, player, matchup, and roster intelligence. The initial integration targets Yahoo Fantasy Hockey.
 
-**Status: early development.** Public Client OAuth with PKCE, manual current-season
-hockey league discovery, and a local MCP foundation are implemented with synthetic
-tests. The developer reported successful live OAuth, token exchange, HTTP 200 from
-both API probes, and discovery/display of their NHL leagues using the second
-Yahoo application after Yahoo confirmed API activation. The final engineering
-review and follow-up validation used offline tests only and did not repeat those
-live checks. The broader capabilities below remain planned; Yahoo league
-information is not exposed through MCP.
+**Status: FGM-004 supported read-only workflow accepted.** Yahoo Public Client
+OAuth with PKCE, current-season NHL league discovery, owned-team selection,
+reported league settings/scoring and player/position views are implemented.
+The human operator confirmed the private CLI displays the expected information
+and matches Yahoo. Automated validation uses synthetic data only; this acceptance
+does not establish every scoring rule, roster completeness or lineup legality.
+Yahoo Fantasy information is not exposed through MCP.
 
 ## Planned capabilities
 
 - Yahoo Fantasy Hockey integration
-- League and scoring settings
-- Roster retrieval
 - Matchup analysis
 - Available-player analysis
 - Weekly roster optimization
@@ -37,8 +34,9 @@ will hold transaction safety rules when transaction functionality is introduced.
 MCP will expose core capabilities to AI clients as an interface.
 
 Yahoo configuration and models use Pydantic; the Yahoo provider uses httpx for
-OAuth and one read-only league-discovery endpoint. A minimal domain league model
-contains identifying metadata. The official Python MCP SDK supplies the local
+OAuth and fixed read-only league/settings/team/roster endpoints. Domain models
+hold normalized identities and reported configuration/roster observations.
+The official Python MCP SDK supplies the local
 stdio interface, with a centralized policy gate for Yahoo data. Sport intelligence,
 strategy, and optimization remain placeholders.
 See [the architecture document](docs/architecture.md) for the intended boundaries.
@@ -105,6 +103,30 @@ before reading. Required collection structure, namespaces, and any supplied
 collection counts are checked; malformed collections fail instead of appearing
 as empty results. The developer reported successful live league parsing; other
 accounts, empty live collections, and future response changes remain unverified.
+
+A separate [private NHL contract verifier](docs/nhl-contract-verification.md)
+remains available for explicitly approved human contract investigation. It is
+stricter than the application view and does not certify partial observations.
+It is not required to repeat the accepted private CLI workflow. Its shareable
+output uses fixed statuses and codes, never Yahoo response data.
+
+## Private league and roster application
+
+The human-only FGM-004 application is available with
+`uv run --locked --offline python -B -m fantasy_gm.league --interactive`.
+It shows supported league flags, untranslated scoring format, exact Decimal
+modifier literals, display-only flags, position applicability and slot capacities,
+plus player identities and eligible/assigned positions. Missing or unsupported
+fields stay unknown; incomplete sections show explicit partial warnings without
+hiding independent information. No scoring calculations or lineup decisions occur.
+See the [private application guide](docs/fgm-004-private-cli.md) for the Windows
+command, privacy requirements and acceptance boundaries.
+
+The human operator confirmed league and owned-team selection, scoring settings,
+player roster and roster positions work and match Yahoo. This is human-reported
+live acceptance for displayed information; the automated suite is offline and
+synthetic. Other leagues/rules, effective coverage, reserve inclusion/completeness,
+lineup legality and transactions remain unverified or unimplemented.
 
 ## Local MCP and Yahoo data policy
 

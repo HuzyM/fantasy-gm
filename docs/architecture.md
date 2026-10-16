@@ -36,7 +36,7 @@ Fantasy GM Core
 | `config` | Explicit Pydantic configuration, including Yahoo OAuth environment settings. |
 | `domain` | Fantasy GM's own Pydantic domain types. |
 | `providers` | Provider access and normalization into domain types. |
-| `providers.yahoo` | Yahoo Public Client OAuth, PKCE/session, XML discovery transport and normalization. |
+| `providers.yahoo` | Yahoo Public Client OAuth, PKCE/session, XML transport and league/settings/team/roster normalization. |
 | `sports` / `sports.nhl` | Sport-specific schedule, player, and matchup context. |
 | `strategy` | Analysis consuming domain types. |
 | `optimizer` | Weekly roster optimization consuming domain types. |
@@ -128,8 +128,9 @@ memory and discarded, not promoted into domain types.
 
 Yahoo's XML hierarchy and `YahooLeagueMetadata` remain inside the provider.
 The provider returns `domain.league.League`: `provider`, `provider_league_id`,
-`name`, optional `sport`, optional `season`. No token, GUID, scoring, roster, or
-other Yahoo response structures enter the domain. Malformed responses and HTTP
+`name`, optional `sport`, optional `season`. Discovery does not introduce token,
+GUID or raw Yahoo XML structures into the domain; FGM-004 separately normalizes
+reported settings and roster observations. Malformed responses and HTTP
 failures produce sanitized errors without provider bodies. DTD/entity declarations
 are rejected. HTTP requests have a bounded timeout, no redirect following, no
 automatic retries, and no cache.
@@ -178,6 +179,59 @@ Pytest, Ruff, and strict
 mypy provide development checks. `pyproject.toml` holds project/tool settings;
 `uv.lock` holds resolved dependency versions.
 
-No roster, scoring settings, matchups, players, standings, transactions, NHL data,
+No scoring calculations, matchups, standings, transactions, external NHL data,
 strategy, optimization, browser automation, persistent tokens, database, frontend,
 hosted backend, production MCP deployment, or autonomous agents are implemented.
+
+### FGM-004 verified team slice
+
+The new `domain.team.Team` holds only provider, opaque league/team identity, and
+name. `YahooFantasyClient.list_league_teams` normalizes a selected league's team
+list; `list_my_league_teams` validates all user-scoped owned identities, filters
+by the selected league, and cross-checks every matching team against the league
+list. Multiple owned teams remain distinct. Missing, duplicate, inconsistent or
+wrongly scoped identities reject the response with sanitized errors.
+
+Both methods reuse the same bounded XML/GET implementation as discovery. The
+private verifier shares their parsers and membership checks. No settings or
+roster request is needed for these methods, and neither results nor tokens are
+retained by the provider. Library logging is suppressed during Fantasy GETs and
+restored on all exits. OAuth and MCP behavior are unchanged.
+
+The human operator confirmed live league/team selection and the private CLI's
+scoring, roster and position displays match Yahoo. Synthetic offline tests
+validate the provider methods independently. Full scoring semantics, roster
+completeness and lineup legality remain unverified. See the
+[team contract history](fgm-004-team-contracts.md) and
+[current application guide](fgm-004-private-cli.md) for the acceptance boundary.
+No general provider framework, persistence or AI integration is introduced.
+
+### Minimal roster envelope
+
+`domain.roster` holds reported roster/entry/coverage facts without a completeness
+or legality flag. The provider normalizes one selected owned team's bounded
+response. The verifier shares normalization, records independent envelope/field
+statuses and reuses the response for existing slot, position, coverage and human
+checks. Missing dates remain missing, and supplied counts describe only returned
+children. See the [roster contract](fgm-004-team-contracts.md#independent-roster-envelope-implemented-offline).
+OAuth, the fixed read-path allowlist and Yahoo-backed MCP refusal are unchanged.
+
+### Integrated private application
+
+`python -B -m fantasy_gm.league --interactive` reuses the private terminal and
+existing authorization flow, with discovered league and verified owned-team
+selection. It reads ownership/membership once, settings once and one roster.
+`providers.yahoo.settings` shares pure identity, stat/modifier, Decimal, scope
+and slot parsing with the verifier. `domain.settings` holds immutable reported
+configuration; independent unavailable sections are `None`. Partial scoring and
+slot observations have explicit incomplete markers. Optional metadata failures
+leave validated fields visible without certifying their complete interpretation.
+No format mapping, scoring calculation or provider XML leaks into the domain.
+
+Known competition flags are preserved outside stat weights. A supported roster
+state with unresolved semantics sets `context_unverified`; it permits reported
+facts but prevents semantic coverage/completeness certification. See the
+[private application guide](fgm-004-private-cli.md). All new application behavior
+has synthetic/offline validation and human-reported acceptance of displayed
+information. No Yahoo-backed MCP integration is wired; acceptance does not
+certify complete scoring semantics, coverage, completeness or lineup legality.
