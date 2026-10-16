@@ -1,4 +1,4 @@
-"""Standalone schedule intelligence; synthetic demo only until access approval."""
+"""Standalone synthetic demo and human-operated PuckAPI schedule observations."""
 
 import argparse
 import sys
@@ -11,6 +11,7 @@ import httpx
 
 from fantasy_gm.domain.schedule import GameType, ScheduledGame, ScheduleSnapshot
 from fantasy_gm.providers.nhl.schedule import NhlScheduleClient, ScheduleError
+from fantasy_gm.providers.puckapi import PuckApiError, PuckApiScheduleClient
 from fantasy_gm.sports.nhl.schedule import analyze_schedule, validate_window
 
 
@@ -99,27 +100,44 @@ def _demo(season: str, start: date, end: date, timezone: ZoneInfo) -> ScheduleSn
 def _game_line(game: ScheduledGame, timezone: ZoneInfo) -> str:
     instant = game.start_time_utc
     when = instant.astimezone(timezone).isoformat() if instant else "time unknown"
+    provenance = (
+        f" | source date {game.reported_date} | UTC "
+        + (instant.isoformat() if instant else "unknown")
+        if game.home.provider == "puckapi"
+        else ""
+    )
     return (
         f"{when} | {_safe(game.away.abbreviation)} at {_safe(game.home.abbreviation)}"
         f" | {game.state.value} | codes {_safe(game.state_code)}/"
         f"{_safe(game.schedule_state_code)} | ID {_safe(game.provider_game_id)}"
+        + provenance
     )
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description="NHL schedule intelligence (demo only)"
+        description="NHL schedule intelligence (synthetic demo or PuckAPI REST)"
     )
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--demo", action="store_true", help="invented games; no network")
     mode.add_argument(
-        "--live", action="store_true", help="disabled pending source approval"
+        "--puckapi", action="store_true", help="live REST; requires PUCKAPI_API_KEY"
+    )
+    mode.add_argument(
+        "--live", action="store_true", help="NHL-operated source remains disabled"
     )
     parser.add_argument("--season", required=True)
     parser.add_argument("--from", dest="start", required=True)
     parser.add_argument("--to", dest="end", required=True)
     parser.add_argument("--timezone", default="America/Toronto")
-    parser.add_argument("--game-type", choices=("regular", "all"), default="regular")
+    parser.add_argument(
+        "--game-type",
+        choices=("regular", "preseason", "playoff", "all"),
+        default="regular",
+    )
+    parser.add_argument(
+        "--limit", type=int, default=500, help="PuckAPI result cap, 1-500"
+    )
     parser.add_argument(
         "--view",
         choices=("all", "counts", "opponents", "back-to-backs", "daily"),
@@ -143,23 +161,47 @@ def main(argv: Sequence[str] | None = None) -> int:
         if not int(args.season[:4]) <= start.year <= end.year <= int(args.season[4:]):
             raise ValueError("INPUT_ERROR")
         timezone = ZoneInfo(args.timezone)
+        if not 1 <= args.limit <= 500:
+            raise ValueError("INPUT_ERROR")
+        game_type = {
+            "regular": GameType.REGULAR,
+            "preseason": GameType.EXHIBITION,
+            "playoff": GameType.POSTSEASON,
+            "all": None,
+        }[args.game_type]
         if args.live:
             raise ScheduleError("ACCESS_NOT_ENABLED")
-        snapshot = _demo(args.season, start, end, timezone)
+        if args.puckapi:
+            with PuckApiScheduleClient.from_env() as client:
+                snapshot = client.get_schedule(
+                    season=args.season,
+                    start=start,
+                    end=end,
+                    timezone=timezone,
+                    game_type=game_type,
+                    limit=args.limit,
+                    deadline=monotonic() + 90,
+                )
+        else:
+            snapshot = _demo(args.season, start, end, timezone)
         report = analyze_schedule(
             snapshot,
             start=start,
             end=end,
             timezone=timezone,
-            game_type=None if args.game_type == "all" else GameType.REGULAR,
+            game_type=game_type,
         )
     except (ValueError, OverflowError, ZoneInfoNotFoundError):
         print("INPUT_ERROR", file=sys.stderr)
         return 2
-    except ScheduleError as error:
+    except (ScheduleError, PuckApiError) as error:
         print(error.code, file=sys.stderr)
         return 2
-    print("SYNTHETIC DEMO - invented clubs and games; no real NHL data or requests.")
+    print(
+        "PuckAPI NHL schedule observation (REST; no Yahoo access)."
+        if args.puckapi
+        else "SYNTHETIC DEMO - invented clubs and games; no real NHL data or requests."
+    )
     print(
         f"Season {_safe(snapshot.season)} | {start} through {end} | "
         f"{_safe(timezone.key)}"
@@ -167,18 +209,26 @@ def main(argv: Sequence[str] | None = None) -> int:
     print(
         f"Observed {snapshot.observed_at_utc.isoformat()} | "
         + (
-            "complete synthetic count coverage"
+            (
+                "complete observed count coverage"
+                if args.puckapi
+                else "complete synthetic count coverage"
+            )
             if report.ranking_available
             else "PARTIAL; totals unknown; rankings unavailable"
         )
     )
-    print("Real NHL access disabled; reschedule history unavailable.")
+    print(
+        "Source completeness/date cutover unverified; reschedule history unavailable."
+        if args.puckapi
+        else "Real NHL access disabled; reschedule history unavailable."
+    )
     by_id = {g.provider_game_id: g for g in snapshot.games}
     for summary in report.summaries:
         team = summary.team
         if args.view in ("all", "counts"):
             coverage = (
-                "complete synthetic"
+                ("complete observed" if args.puckapi else "complete synthetic")
                 if summary.count_complete
                 else "observed; total unknown"
             )
@@ -240,6 +290,12 @@ def main(argv: Sequence[str] | None = None) -> int:
             ),
         ):
             print(_game_line(game, timezone))
+    if args.view in ("all", "daily", "opponents"):
+        unplaced = [g for g in snapshot.games if g.start_time_utc is None]
+        if unplaced:
+            print("Unplaced games (local date/time unknown; may affect the window):")
+            for game in unplaced:
+                print(_game_line(game, timezone))
     if report.ranking_available and args.view in ("all", "counts"):
         totals = {summary.total for summary in report.summaries}
         if len(totals) == 1:
