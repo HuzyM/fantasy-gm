@@ -47,6 +47,7 @@ def isolate_yahoo_environment(monkeypatch: pytest.MonkeyPatch) -> None:
         "YAHOO_CLIENT_SECRET",
         "YAHOO_REDIRECT_URI",
         "YAHOO_AI_TOOLS_ENABLED",
+        "PUCKAPI_API_KEY",
     ):
         monkeypatch.delenv(key, raising=False)
 

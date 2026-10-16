@@ -251,3 +251,24 @@ rankings are separate: unknown/missing observations cannot become proven zeros.
 Domain exception states are retained without inventing NHL mappings or reschedule
 history. Responses stay in memory. No cache, provider framework, polling, Yahoo
 join or MCP exposure is introduced. See the [schedule guide](nhl-schedule.md).
+
+### FGM-006 PuckAPI observations
+
+`providers.puckapi` is a separate small REST adapter, reusing the existing
+schedule models and pure analysis unchanged. The human CLI's explicit `--puckapi`
+mode reads `PUCKAPI_API_KEY` at runtime and makes at most two fixed-origin POST
+requests: current team catalogue and a bounded games query. The prior `--live`
+NHL-operated mode remains disabled. No PuckAPI MCP connection is added.
+
+REST envelopes, unique identities and current 32-club membership are validated.
+Only aware full timestamps become UTC instants. Unknown states and unplaced
+times remain visible; saturated result limits warn without automatic requests.
+The candidate date padding does not qualify completeness: count/B2B completeness
+and rankings stay unavailable until source coverage/date semantics are established.
+Transport sizes, timeouts, cookies, logging, credentials and credits are bounded;
+no responses or keys are persisted. Yahoo code and policies remain untouched.
+
+The operator reports two successful weekly live CLI checks, including DST and
+B2B reconciliation. This validates those observations only: HTTP success,
+below-limit results and sampled agreement do not establish complete coverage.
+An empty response remains an unqualified observation, with rankings suppressed.

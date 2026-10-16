@@ -191,7 +191,7 @@ The real MCP stdio smoke-test child installs its own guards before starting the
 server. General collection-time imports and arbitrary subprocesses are outside
 these fixture guards; this is not an operating-system network sandbox.
 
-## NHL schedule demo (FGM-005)
+## NHL schedules (FGM-005/006)
 
 Try independent schedule counts, opponents, daily games and back-to-back views
 without Yahoo authentication:
@@ -202,9 +202,16 @@ uv run --locked --offline python -m fantasy_gm.schedule --demo --season 20262027
 
 This is an explicitly synthetic 32-club demonstration, not real NHL data.
 America/Toronto is the default display zone; UTC instants and DST conversion are
-supported. Incomplete coverage suppresses league-wide rankings. `--live` remains
-disabled pending source authorization and live contract acceptance. No calendar
-imports, paid services, Yahoo data joins or AI tools are added. See the
+supported. `--puckapi` retrieves real observations using the runtime
+`PUCKAPI_API_KEY`; the key belongs only in a private shell session. PuckAPI uses
+documented authenticated REST, normally two requests / six credits per run.
+Coverage remains explicitly partial; reaching the result cap adds a warning.
+Time-only timestamps are never assigned a guessed timezone. The operator reports
+successful live acceptance for two weekly windows, including DST/B2B checks;
+this does not establish a complete-coverage contract. Exit 1 remains expected
+for partial observations, including valid empty results. `--live` continues to
+reject the NHL-operated source. No calendar imports, Yahoo data joins or AI tools are added.
+See the
 [schedule guide](docs/nhl-schedule.md) for views, meanings and limitations.
 
 ## License
