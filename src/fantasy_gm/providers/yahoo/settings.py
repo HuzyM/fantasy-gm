@@ -251,8 +251,11 @@ def _scoring_structure(
     return code, stats, by_id, incomplete
 
 
-def _modifiers(items: dict[str, ET.Element], ns: str) -> dict[str, Decimal]:
+def _modifiers(
+    items: dict[str, ET.Element], ns: str
+) -> tuple[dict[str, Decimal], dict[str, str]]:
     weights: dict[str, Decimal] = {}
+    literals: dict[str, str] = {}
     for stat_id, item in items.items():
         if _one(item, "value", ns).attrib:
             raise ValueError()
@@ -268,7 +271,8 @@ def _modifiers(items: dict[str, ET.Element], ns: str) -> dict[str, Decimal]:
         if not re.fullmatch(r"[+-]?[0-9]+(?:\.[0-9]+)?", value):
             raise YahooSettingsUnsupportedError("UNSUPPORTED_STRUCTURE")
         weights[stat_id] = weight
-    return weights
+        literals[stat_id] = value  # Retain only after all existing checks pass.
+    return weights, literals
 
 
 def _bool_field(node: ET.Element, name: str, ns: str) -> bool | None:
@@ -286,6 +290,7 @@ def _stat_rules(
     weights: dict[str, Decimal],
     ns: str,
     *,
+    modifier_literals: dict[str, str],
     strict: bool = True,
 ) -> tuple[StatRule, ...]:
     rules = []
@@ -342,6 +347,7 @@ def _stat_rules(
                 stat_id=stat_id,
                 name=label,
                 modifier=weights.get(stat_id),
+                modifier_literal=modifier_literals.get(stat_id),
                 enabled=flags["enabled"],
                 display_only=flags["is_only_display_stat"],
                 excluded_from_display=flags["is_excluded_from_display"],
@@ -463,12 +469,17 @@ def parse_league_settings(content: bytes, *, league_key: str) -> LeagueSettings:
             strict=False,
         )
         weights: dict[str, Decimal] = {}
+        literals: dict[str, str] = {}
         for stat_id, item in modifiers.items():
             try:
-                weights.update(_modifiers({stat_id: item}, ns))
+                parsed_weights, parsed_literals = _modifiers({stat_id: item}, ns)
+                weights.update(parsed_weights)
+                literals.update(parsed_literals)
             except (ValueError, YahooSettingsUnsupportedError):
                 incomplete = True  # That weight remains absent, never zero.
-        rules = _stat_rules(stats, weights, ns, strict=False)
+        rules = _stat_rules(
+            stats, weights, ns, modifier_literals=literals, strict=False
+        )
         incomplete |= structure_incomplete or any(
             r.incomplete
             or (

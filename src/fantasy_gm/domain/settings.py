@@ -20,6 +20,8 @@ class StatRule(BaseModel):
     stat_id: NonEmptyString
     name: NonEmptyString | None
     modifier: Decimal | None
+    # Validated provider text; Decimal preserves value, not lexical spelling.
+    modifier_literal: NonEmptyString | None = None
     enabled: bool | None = None
     display_only: bool | None = None
     excluded_from_display: bool | None = None

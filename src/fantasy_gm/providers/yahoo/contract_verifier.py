@@ -345,7 +345,7 @@ def _scoring(
             _unsupported(report, Check.SCORING_STRUCTURE, StopReason(error.reason))
     with _checking(report, Check.MODIFIER_VALUES):
         try:
-            weights = _modifiers(modifier_by_id, ns)
+            weights, literals = _modifiers(modifier_by_id, ns)
         except YahooSettingsUnsupportedError:
             _unsupported(report, Check.MODIFIER_VALUES)
     scoring: list[str] = [_private("scoring_type", code)]
@@ -362,7 +362,7 @@ def _scoring(
                 _private(flag, None if value is None else "1" if value else "0")
             )
         try:
-            rules = _stat_rules(stats, weights, ns)
+            rules = _stat_rules(stats, weights, ns, modifier_literals=literals)
         except YahooSettingsUnsupportedError:
             _unsupported(report, Check.STAT_APPLICABILITY)
         for rule in rules:
@@ -370,9 +370,10 @@ def _scoring(
             def flag_text(value: bool | None) -> str | None:
                 return None if value is None else "1" if value else "0"
 
+            literal = rule.modifier_literal
             scoring.append(
                 f"stat={ascii(rule.stat_id)} {_private('name', rule.name)} "
-                f"weight={rule.modifier if rule.modifier is not None else 'MISSING'} "
+                f"weight={literal if literal is not None else 'MISSING'} "
                 f"{_private('enabled', flag_text(rule.enabled))} "
                 f"{_private('display_only', flag_text(rule.display_only))} "
                 + _private(

@@ -56,7 +56,7 @@ def _configuration(settings: LeagueSettings) -> tuple[str, ...]:
                 _field("Reported format code (untranslated)", scoring.format_code),
                 _field("Fractional points", scoring.fractional_points),
                 _field("Negative points", scoring.negative_points),
-                "Reported modifier literals are exact. Missing is never zero.",
+                "Modifier literals preserve reported text. Missing is never zero.",
                 "Flags and position scopes remain explicit; format is not translated.",
             )
         )
@@ -68,7 +68,7 @@ def _configuration(settings: LeagueSettings) -> tuple[str, ...]:
                     (
                         _field("Stat ID", rule.stat_id),
                         _field("Stat", rule.name),
-                        _field("Modifier", rule.modifier),
+                        _field("Modifier literal", rule.modifier_literal),
                         _field("Enabled", rule.enabled),
                         _field("Display only", rule.display_only),
                         _field("Hidden from display", rule.excluded_from_display),

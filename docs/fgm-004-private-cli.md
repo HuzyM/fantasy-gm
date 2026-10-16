@@ -40,6 +40,9 @@ Supported configuration preserves the provider's untranslated scoring format,
 exact Decimal modifiers, enable/display-only/visibility flags, stat identifiers,
 position scopes and roster slot codes/capacities. Missing flags stay unknown.
 An explicit zero modifier stays zero; a missing weight never becomes zero.
+Each accepted modifier retains its validated source text alongside its exact
+Decimal value. The private view displays that text, including leading plus signs
+and zeros; it does not reconstruct the literal by formatting the Decimal.
 Unweighted statistics not explicitly disabled or display-only make the scoring
 observations incomplete. Other known values still appear. Visibility exclusion
 is not treated as display-only.

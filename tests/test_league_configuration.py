@@ -7,6 +7,34 @@ import pytest
 from tests.test_yahoo_contract_verifier import SETTINGS
 
 
+@pytest.mark.parametrize(
+    "literal", ["+02.50", "002.50", "-02.50", "-2.50", "0", "-00.00"]
+)
+def test_modifier_preserves_reported_text_and_exact_numeric_value(literal: str) -> None:
+    from fantasy_gm.league import _configuration
+    from fantasy_gm.providers.yahoo.settings import parse_league_settings
+
+    body = SETTINGS.replace(
+        b"<value>-2.50</value>", f"<value>{literal}</value>".encode()
+    )
+    result = parse_league_settings(body, league_key="999.l.1001")
+    assert result.scoring is not None and not result.scoring.incomplete
+    rule = result.scoring.rules[1]
+    assert rule.modifier == Decimal(literal)
+    assert rule.modifier_literal == literal
+    if literal == "-00.00":
+        assert rule.modifier.is_signed()
+    assert f"Modifier literal: '{literal}'" in "\n".join(_configuration(result))
+    from tests.test_yahoo_contract_verifier import PAYLOADS, lines, run_fake
+
+    payloads = PAYLOADS.copy()
+    payloads[1] = body
+    report, _, private = run_fake(payloads)
+    assert "MODIFIER_VALUES PASS" in lines(report)
+    assert f"weight={literal} " in "\n".join(private)
+    assert literal not in "\n".join(lines(report))
+
+
 def test_reported_configuration_keeps_exact_modifiers_and_display_scopes() -> None:
     from fantasy_gm.providers.yahoo.settings import parse_league_settings
 
@@ -17,6 +45,7 @@ def test_reported_configuration_keeps_exact_modifiers_and_display_scopes() -> No
     assert rules["902"].modifier == Decimal("-2.50")
     assert rules["903"].modifier == Decimal("0")
     assert rules["904"].modifier is None and rules["904"].display_only is True
+    assert rules["904"].modifier_literal is None
     assert rules["901"].scopes is not None
     assert rules["901"].scopes[1].display_only is True
     assert result.scoring.fractional_points is True
@@ -96,6 +125,9 @@ def test_invalid_or_incomplete_scoring_never_becomes_complete(
     else:
         assert result.scoring is not None and result.scoring.incomplete
         assert result.scoring.rules[0].modifier is not None
+        if b"<value>" in old:
+            assert result.scoring.rules[1].modifier is None
+            assert result.scoring.rules[1].modifier_literal is None
 
 
 @pytest.mark.parametrize("key", ["999.l.1002", "998.l.1001"])
