@@ -32,6 +32,11 @@ def _read_hidden_input(prompt: str) -> str:
         )
 
 
+def _read_visible_input(prompt: str) -> str:
+    """Ordinary navigation only; credentials must use the hidden reader."""
+    return input(prompt).strip()
+
+
 def run_authorization(
     config: YahooOAuthConfig,
     http_client: httpx.Client,

@@ -30,6 +30,11 @@ class RosterEntry(BaseModel):
     selected_position: PositionCode | None = None
     selected_coverage: RosterCoverage | None = None
     selected_is_flex: bool | None = None
+    # Reported professional affiliation, not a current-team/appearance guarantee.
+    professional_team_code: (
+        Annotated[str, StringConstraints(pattern=r"^[A-Z]{2,3}$")] | None
+    ) = None
+    professional_team_unverified: bool = False
 
 
 class Roster(BaseModel):

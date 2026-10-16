@@ -379,6 +379,34 @@ def _eligible_positions(player: ElementTree.Element, ns: str) -> tuple[str, ...]
     return tuple(values)
 
 
+def _professional_team(
+    player: ElementTree.Element, ns: str
+) -> tuple[str | None, str | None]:
+    """Consume optional reported affiliation, never infer it from a player name.
+
+    YFPY documents these player fields, including NHL roster examples:
+    https://yfpy.uberfastman.com/query/#get_team_roster_player_info_by_date
+    Its Washington example uses Was; PuckAPI's club directory uses WSH.
+    No other aliases or numeric editorial-team identity mappings are inferred.
+    """
+    if not any(c.tag.split("}")[-1] == "editorial_team_abbr" for c in player):
+        return None, None
+    if _one(player, "editorial_team_abbr", ns).attrib:
+        raise ValueError()
+    code = _text(player, "editorial_team_abbr", ns)
+    if not re.fullmatch(r"[A-Za-z]{2,3}", code):
+        raise ValueError()
+    team_key: str | None = None
+    if any(c.tag.split("}")[-1] == "editorial_team_key" for c in player):
+        if _one(player, "editorial_team_key", ns).attrib or not re.fullmatch(
+            r"nhl\.t\.[0-9]+", _text(player, "editorial_team_key", ns)
+        ):
+            raise ValueError()
+        team_key = _text(player, "editorial_team_key", ns)
+    code = code.upper()
+    return ("WSH" if code == "WAS" else code), team_key
+
+
 def _normalize_roster(
     roster: ElementTree.Element,
     players: list[ElementTree.Element],
@@ -388,6 +416,7 @@ def _normalize_roster(
     strict: bool = True,
 ) -> Roster:
     entries: list[RosterEntry] = []
+    professional_keys: list[str | None] = []
     seen: set[str] = set()
     game = _league_game_key(team.provider_league_id)
     context_unverified = any(c.tag == f"{{{ns}}}is_prescoring" for c in roster)
@@ -473,6 +502,16 @@ def _normalize_roster(
                     if strict:
                         raise
                     context_unverified = True
+        professional_team_code: str | None = None
+        professional_key: str | None = None
+        professional_team_unverified = False
+        try:
+            professional_team_code, professional_key = _professional_team(player, ns)
+        except ValueError:
+            if strict:
+                raise
+            professional_team_unverified = context_unverified = True
+        professional_keys.append(professional_key)
         entries.append(
             RosterEntry(
                 provider_player_id=key,
@@ -481,8 +520,36 @@ def _normalize_roster(
                 selected_position=selected_position,
                 selected_coverage=selected_coverage,
                 selected_is_flex=selected_is_flex,
+                professional_team_code=professional_team_code,
+                professional_team_unverified=professional_team_unverified,
             )
         )
+    # Check internal consistency, without decoding numeric NHL team identities.
+    keys_by_code: dict[str, set[str]] = {}
+    codes_by_key: dict[str, set[str]] = {}
+    for entry, team_key in zip(entries, professional_keys, strict=True):
+        if entry.professional_team_code is not None and team_key is not None:
+            keys_by_code.setdefault(entry.professional_team_code, set()).add(team_key)
+            codes_by_key.setdefault(team_key, set()).add(entry.professional_team_code)
+    conflicts = {code for code, keys in keys_by_code.items() if len(keys) > 1}
+    for codes in codes_by_key.values():
+        if len(codes) > 1:
+            conflicts.update(codes)
+    if conflicts:
+        if strict:
+            raise ValueError()
+        context_unverified = True
+        entries = [
+            entry.model_copy(
+                update={
+                    "professional_team_code": None,
+                    "professional_team_unverified": True,
+                }
+            )
+            if entry.professional_team_code in conflicts
+            else entry
+            for entry in entries
+        ]
     declared = _one(roster, "players", ns).get("count")
     try:
         coverage = _reported_coverage(roster, ns)

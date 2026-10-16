@@ -4,7 +4,7 @@ import logging
 import os
 import sys
 import warnings
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from textwrap import wrap
 
@@ -115,27 +115,82 @@ def _private_terminal() -> Iterator[None]:
             sys.stdout.flush()
 
 
-def _show(lines: tuple[str, ...]) -> None:
+class _BackRequested(Exception):
+    """Return to the preceding private view without cancelling the session."""
+
+
+def _show(
+    lines: tuple[str, ...],
+    *,
+    read_input: Callable[[str], str] | None = None,
+    allow_back: bool = False,
+) -> None:
     """Only already-escaped private fields, paginated within the alternate screen."""
     rows = [part for line in lines for part in (wrap(line, width=72) or [""])]
-    for start in range(0, len(rows), 12):
+    start = 0
+    while start < len(rows):
         sys.stdout.write(_CLEAR_PRIVATE)
         print("Yahoo Fantasy Sports — data provided by Yahoo. PRIVATE; do not share.")
         print("\n".join(rows[start : start + 12]))
+        next_start = start + 12
         if start + 12 < len(rows):
-            if _read_hidden_input("Type NEXT to continue, or CANCEL: ") != "NEXT":
-                raise KeyboardInterrupt()
+            if read_input is None:
+                if _read_hidden_input("Type NEXT to continue, or CANCEL: ") != "NEXT":
+                    raise KeyboardInterrupt()
+            else:
+                while True:
+                    action = read_input("Type NEXT, BACK, or CANCEL: ").upper()
+                    if action == "CANCEL":
+                        raise SelectionCancelled()
+                    if action == "NEXT":
+                        break
+                    if action == "BACK":
+                        if start:
+                            next_start = start - 12
+                            break
+                        if allow_back:
+                            raise _BackRequested()
+                        print("Already on the first page. Type NEXT or CANCEL.")
+                    else:
+                        print("Invalid action. Type NEXT, BACK, or CANCEL.")
+        start = next_start
 
 
-def _choose(title: str, options: tuple[str, ...]) -> int | None:
-    _show((title,) + tuple(f"{i + 1}: {row}" for i, row in enumerate(options)))
-    value = _read_hidden_input("Selection number, or CANCEL: ")
-    if value == "CANCEL":
-        raise SelectionCancelled()
-    if not value.isascii() or not value.isdecimal() or len(value) > 6:
-        return None
-    index = int(value) - 1
-    return index if 0 <= index < len(options) else None
+def _choose(
+    title: str,
+    options: tuple[str, ...],
+    *,
+    read_input: Callable[[str], str] | None = None,
+    allow_back: bool = False,
+) -> int | None:
+    lines = (title,) + tuple(f"{i + 1}: {row}" for i, row in enumerate(options))
+    if read_input is None:
+        _show(lines)
+    else:
+        _show(lines, read_input=read_input, allow_back=allow_back)
+        if not options:
+            return None
+    while True:
+        value = (read_input or _read_hidden_input)(
+            "Selection number, BACK, or CANCEL: "
+            if read_input is not None
+            else "Selection number, or CANCEL: "
+        )
+        action = value.upper() if read_input is not None else value
+        if action == "CANCEL":
+            raise SelectionCancelled()
+        if read_input is not None and action == "BACK":
+            if allow_back:
+                raise _BackRequested()
+            print("No earlier selection is available here. Select a number or CANCEL.")
+            continue
+        if value.isascii() and value.isdecimal() and len(value) <= 6:
+            index = int(value) - 1
+            if 0 <= index < len(options):
+                return index
+        if read_input is None:
+            return None
+        print(f"Invalid selection. Enter a number from 1 to {len(options)}, or CANCEL.")
 
 
 def _confirm(check: Check, details: tuple[str, ...]) -> Status:

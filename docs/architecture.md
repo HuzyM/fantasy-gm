@@ -272,3 +272,24 @@ The operator reports two successful weekly live CLI checks, including DST and
 B2B reconciliation. This validates those observations only: HTTP success,
 below-limit results and sampled agreement do not establish complete coverage.
 An empty response remains an unqualified observation, with rankings suppressed.
+
+### FGM-007 private roster schedules and session cache
+
+The Yahoo roster provider retains optional normalized professional-team codes
+and an explicit affiliation-uncertainty flag on `RosterEntry`. It consumes the
+existing roster response; ownership, transport, OAuth and read paths are unchanged.
+`sports.nhl.roster_schedule` joins these facts to a validated PuckAPI cohort and
+uses the existing pure schedule analysis. Joined private rows never enter a cache.
+
+`schedule_service.ScheduleService` owns at most four immutable public schedule
+snapshots with an input-complete key and monotonic TTL. Expiration and refresh
+evict before a fresh bounded PuckAPI client is created; errors are not cached,
+and valid partial observations retain every coverage/truncation warning. It
+receives no Yahoo identities, roster, credentials or raw response payloads.
+
+`fantasy_gm.roster_schedule` reuses private terminal, authorization, discovered
+league selection and owned-team roster retrieval. One Yahoo session is followed
+by interactive roster/player/NHL-team views over shared schedule observations.
+There is no automatic roster refresh, disk cache, background service, provider
+framework or AI interface. Existing league and schedule CLIs remain unchanged.
+See the [FGM-007 private guide](fgm-007-roster-schedule.md).

@@ -123,7 +123,18 @@ def test_ordinary_team_and_player_metadata_preserve_normalized_roster() -> None:
         b"<headshot><url>invented-private</url></headshot></player>",
     )
     result = parse(body)
-    assert isinstance(result, Roster) and result == parse(ROSTER)
+    baseline = parse(ROSTER)
+    assert isinstance(result, Roster) and isinstance(baseline, Roster)
+    # FGM-007 retains this optional code; all earlier roster facts stay identical.
+    expected = baseline.model_copy(
+        update={
+            "entries": tuple(
+                entry.model_copy(update={"professional_team_code": "ZZZ"})
+                for entry in baseline.entries
+            )
+        }
+    )
+    assert result == expected
     assert "invented-private" not in repr(result)
 
 
