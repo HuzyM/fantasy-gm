@@ -191,6 +191,22 @@ The real MCP stdio smoke-test child installs its own guards before starting the
 server. General collection-time imports and arbitrary subprocesses are outside
 these fixture guards; this is not an operating-system network sandbox.
 
+## NHL schedule demo (FGM-005)
+
+Try independent schedule counts, opponents, daily games and back-to-back views
+without Yahoo authentication:
+
+```powershell
+uv run --locked --offline python -m fantasy_gm.schedule --demo --season 20262027 --from 2026-11-01 --to 2026-11-07 --view counts
+```
+
+This is an explicitly synthetic 32-club demonstration, not real NHL data.
+America/Toronto is the default display zone; UTC instants and DST conversion are
+supported. Incomplete coverage suppresses league-wide rankings. `--live` remains
+disabled pending source authorization and live contract acceptance. No calendar
+imports, paid services, Yahoo data joins or AI tools are added. See the
+[schedule guide](docs/nhl-schedule.md) for views, meanings and limitations.
+
 ## License
 
 All rights reserved pending the project owner's choice of license. See `LICENSE`.

@@ -235,3 +235,19 @@ facts but prevents semantic coverage/completeness certification. See the
 has synthetic/offline validation and human-reported acceptance of displayed
 information. No Yahoo-backed MCP integration is wired; acceptance does not
 certify complete scoring semantics, coverage, completeness or lineup legality.
+
+### FGM-005 independent schedule foundation
+
+`providers.nhl.schedule` parses bounded catalogue/league windows into frozen
+`domain.schedule` models. Pure `sports.nhl.schedule` functions calculate local-date
+counts, opponents and B2B indicators; the standalone `fantasy_gm.schedule` command
+renders the report. It has no Yahoo imports or authentication dependency.
+Only an exact injected httpx.MockTransport is accepted; the CLI's labelled demo
+generates fictitious games, while `--live` always rejects access. No real NHL
+requests or live acceptance are claimed. The only dependency addition is tzdata.
+
+Coverage records the timezone it qualifies. Counts, context completeness and
+rankings are separate: unknown/missing observations cannot become proven zeros.
+Domain exception states are retained without inventing NHL mappings or reschedule
+history. Responses stay in memory. No cache, provider framework, polling, Yahoo
+join or MCP exposure is introduced. See the [schedule guide](nhl-schedule.md).
