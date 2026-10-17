@@ -34,6 +34,8 @@ The independent whole-branch review found two substantive issues, both addressed
 
 There are 13 unit/component tests. The independent reviewer examined the reference and all four captures. One minor visual difference remains for user review: compact schedule matchup/time typography is smaller than the reference. Automated accessibility results cover the scanned states, not assistive-technology certification or all interactions.
 
+Fresh-export checks also caught Windows Git converting frontend text files to CRLF, which made the formatter fail despite a successful build. Frontend-scoped Git attributes now keep text as LF without changing Python or root repository rules; the export formatting check was rerun after this correction.
+
 Implementation decisions: use the clean existing checkout on a dedicated feature branch rather than creating another worktree; adapt the approved product plan into three implementation tasks recorded in a manual ledger. These choices trade directory isolation and scripted bookkeeping for simpler delivery. No additional screens are implemented.
 
 The main JavaScript bundle is approximately 78KB gzip, with about 544KB of original WebP artwork and locally bundled Latin fonts. There is no routing library, global-state framework, UI framework, backend service, database or subscription dependency in this slice.
