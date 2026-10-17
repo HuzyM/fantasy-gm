@@ -214,6 +214,21 @@ reject the NHL-operated source. No calendar imports, Yahoo data joins or AI tool
 See the
 [schedule guide](docs/nhl-schedule.md) for views, meanings and limitations.
 
+## Private roster schedules (FGM-007)
+
+The new human-only `python -B -m fantasy_gm.roster_schedule --interactive`
+workflow authorizes Yahoo once and uses professional-team metadata from the
+existing roster response to show observed NHL schedules for supported players.
+Player and NHL-team views share a bounded four-entry in-memory PuckAPI cache,
+with a configurable one-hour TTL and explicit manual refresh. No roster or
+credential is cached, persisted or sent to PuckAPI/AI; only public schedule
+observations are cached. Missing affiliations and coverage remain unknown.
+The operator reports successful private live acceptance of authentication,
+affiliation matching, observed counts, player selection, cache/refresh, input
+retries, BACK navigation and exit. Complete totals and B2B coverage remain unknown.
+See the [private guide](docs/fgm-007-roster-schedule.md) for secure shell commands,
+cache statuses, request budgets, acceptance checks and remaining limitations.
+
 ## License
 
 All rights reserved pending the project owner's choice of license. See `LICENSE`.

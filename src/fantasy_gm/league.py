@@ -4,6 +4,7 @@ import logging
 import os
 import sys
 import warnings
+from collections.abc import Callable
 
 import httpx
 
@@ -151,24 +152,38 @@ def _roster(roster: Roster) -> tuple[str, ...]:
     return tuple(lines)
 
 
-def _select_league(leagues: list[League]) -> League:
+def _select_league(
+    leagues: list[League], *, read_input: Callable[[str], str] | None = None
+) -> League:
     if any(league.sport != "nhl" for league in leagues) or len(
         {league.provider_league_id for league in leagues}
     ) != len(leagues):
         raise ValueError()
     if not leagues:
         _show(("No current NHL leagues returned. Nothing was saved.",))
-        _next()
+        if read_input is None:
+            _next()
+        else:
+            while True:
+                action = read_input("Type NEXT to finish, or CANCEL: ").upper()
+                if action == "CANCEL":
+                    raise SelectionCancelled()
+                if action == "NEXT":
+                    break
+                print("No league is available. Type NEXT to finish, or CANCEL.")
         raise _NoAvailableSelection()
-    index = _choose(
-        "Select your personal NHL league",
-        tuple(
-            _field("League", league.name)
-            + " | "
-            + _field("Identity", league.provider_league_id)
-            for league in leagues
-        ),
+    options = tuple(
+        _field("League", league.name)
+        + " | "
+        + _field("Identity", league.provider_league_id)
+        for league in leagues
     )
+    if read_input is None:
+        index = _choose("Select your personal NHL league", options)
+    else:
+        index = _choose(
+            "Select your personal NHL league", options, read_input=read_input
+        )
     if index is None or not 0 <= index < len(leagues):
         raise SelectionCancelled()
     return leagues[index]
