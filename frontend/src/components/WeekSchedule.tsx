@@ -1,5 +1,5 @@
 import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import type { DaySchedule } from '../view-model';
 import { dateLabel, describeDatum } from '../view-model';
 import { Button, TeamMark } from './primitives';
@@ -17,13 +17,30 @@ function DayCard({
   const shown = expanded ? day.games : day.games.slice(0, 3);
   const remaining = day.games.length - 3;
   const count = describeDatum(day.count);
+  const reasonId = useId();
+  let countAnnouncement: string;
+  switch (day.count.state) {
+    case 'verified':
+      countAnnouncement = `${day.count.value} games, supplied count`;
+      break;
+    case 'incomplete':
+      countAnnouncement = `${day.count.value} observed games, total unknown`;
+      break;
+    case 'unknown':
+      countAnnouncement = 'Game count unknown';
+      break;
+    case 'unsupported':
+      countAnnouncement = 'Game count unavailable';
+      break;
+  }
   const fullDate = dateLabel(day.date, { weekday: 'long', month: 'long', day: 'numeric' });
   return (
     <article className={`day-card ${selected ? 'active' : ''}`} aria-label={fullDate}>
       <button
         className="day-select"
         aria-pressed={selected}
-        aria-label={`Select ${fullDate}`}
+        aria-label={`Select ${fullDate}: ${countAnnouncement}`}
+        aria-describedby={count.note ? reasonId : undefined}
         onClick={onSelect}
       >
         <span className="day-name">{dateLabel(day.date, { weekday: 'short' })}</span>
@@ -36,7 +53,9 @@ function DayCard({
             ? 'OBSERVED GAMES'
             : day.count.state === 'unknown'
               ? 'COVERAGE UNKNOWN'
-              : 'GAMES'}
+              : day.count.state === 'unsupported'
+                ? 'COVERAGE UNAVAILABLE'
+                : 'GAMES'}
         </small>
       </button>
       <ul className="mini-games" aria-label={`${fullDate} games`}>
@@ -69,8 +88,8 @@ function DayCard({
         </button>
       )}
       {count.note && (
-        <span className="sr-only" title={count.note}>
-          Partial · total unknown
+        <span className="sr-only" id={reasonId}>
+          {count.note}
         </span>
       )}
     </article>

@@ -33,7 +33,7 @@ Browser checks exercise filtering, inspection, expansion, week navigation, unsup
 - `src/screens/Overview.tsx`: Overview state and composition. `App.tsx` mounts this screen only.
 - `src/components/`: shared shell, panel/button/data-value primitives, keyboard-accessible tabs, day cards, roster table and player inspection.
 - `src/view-model.ts`: immutable presentation contracts and small pure selection/date functions.
-- `src/data/overview.ts`: illustrative 2026–27 fixture week, players and schedules.
+- `src/fixtures/overview.ts`: illustrative 2026–27 fixture week, players and schedules. This directory is intentionally separate from the repository's ignored provider `data/` directories.
 - `src/styles.css`: reference-derived midnight-blue tokens, controlled glow, desktop composition and responsive rules.
 - `scripts/verify-browser.mjs`: repeatable browser checks, screenshot capture and request isolation.
 

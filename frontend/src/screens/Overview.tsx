@@ -5,7 +5,7 @@ import { Button } from '../components/primitives';
 import { PlayerInspection } from '../components/PlayerInspection';
 import { RosterTable } from '../components/RosterTable';
 import { WeekSchedule } from '../components/WeekSchedule';
-import { daysForWeek, overviewFixture } from '../data/overview';
+import { daysForWeek, overviewFixture } from '../fixtures/overview';
 import type { PositionGroup } from '../view-model';
 import { filterPlayers, shiftWeek } from '../view-model';
 

@@ -23,7 +23,18 @@ Current deliberate differences are documented in the frontend README: original g
 
 From `frontend/`: `npm test`, `npm run typecheck`, `npm run format:check`, `npm run build`, `npm run test:browser`.
 
-The repeatable browser command verifies 1672, 1440, 768 and 390px layouts, fixture interactions, no external requests/console errors, and axe A/AA checks. Captures are generated from the production build; the checked-in images are synthetic review evidence. All 783 existing offline Python tests passed as the baseline before frontend work; no Python dependency or implementation is changed by this milestone.
+The repeatable browser command checks layout overflow and captures at 1672, 1440, 768 and 390px. Fixture interactions run at desktop, followed by phone navigation checks; these are not comprehensive interaction checks at every width. It rejects external requests and console errors and runs axe A/AA scans on initial desktop/phone states. Captures are generated from the production build; the checked-in images are synthetic review evidence. All 783 existing offline Python tests passed again after frontend implementation, together with Ruff, Python formatting and strict mypy. No Python dependency or implementation is changed by this milestone.
+
+## Independent review and corrections
+
+The independent whole-branch review found two substantive issues, both addressed in one correction pass:
+
+- A synthetic fixture lived under a directory excluded by the existing provider-data privacy rule. A tracked-tree export reproduced the broken build. The fixture now lives under `src/fixtures/`; the root ignore rule remains intact. Delivery checks include a fresh Git export, offline dependency installation, tests, production build and browser checks.
+- Calendar buttons omitted counts from accessible names and described unknown coverage as partial. Four regression tests first failed, then passed after each certainty state received its own announcement and the actual reason was connected as an accessible description.
+
+There are 13 unit/component tests. The independent reviewer examined the reference and all four captures. One minor visual difference remains for user review: compact schedule matchup/time typography is smaller than the reference. Automated accessibility results cover the scanned states, not assistive-technology certification or all interactions.
+
+Implementation decisions: use the clean existing checkout on a dedicated feature branch rather than creating another worktree; adapt the approved product plan into three implementation tasks recorded in a manual ledger. These choices trade directory isolation and scripted bookkeeping for simpler delivery. No additional screens are implemented.
 
 The main JavaScript bundle is approximately 78KB gzip, with about 544KB of original WebP artwork and locally bundled Latin fonts. There is no routing library, global-state framework, UI framework, backend service, database or subscription dependency in this slice.
 

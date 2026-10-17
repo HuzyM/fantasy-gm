@@ -1,7 +1,7 @@
 import { CalendarDays, Info, X } from 'lucide-react';
 import { useState } from 'react';
 import type { InspectorTab, Player } from '../view-model';
-import { teamNames } from '../data/overview';
+import { teamNames } from '../fixtures/overview';
 import { DataValue, PlayerAvatar, TeamMark } from './primitives';
 import { Tabs } from './Tabs';
 
