@@ -10,6 +10,35 @@ from tests.test_puckapi_schedule import collect, game
 from tests.test_roster_affiliation import roster_with
 
 
+@pytest.mark.parametrize(
+    "metadata,status",
+    [
+        (b"", "MISSING_AFFILIATION"),
+        (b"<editorial_team_key>nhl.t.1</editorial_team_key>", "AFFILIATION_UNVERIFIED"),
+        (b"<editorial_team_key>nba.t.1</editorial_team_key>", "AFFILIATION_UNVERIFIED"),
+    ],
+)
+def test_orphaned_metadata_is_distinct_from_missing_affiliation(
+    monkeypatch: pytest.MonkeyPatch, metadata: bytes, status: str
+) -> None:
+    import fantasy_gm.providers.puckapi as puck
+    from fantasy_gm.sports.nhl.roster_schedule import roster_schedule_rows
+
+    monkeypatch.setattr(puck, "sleep", lambda _: None)
+    roster = roster_with(metadata)
+    snapshot, _ = collect([game()])
+    rows = roster_schedule_rows(
+        roster,
+        snapshot,
+        roster_season=2026,
+        start=date(2026, 10, 20),
+        end=date(2026, 10, 22),
+        timezone=ZoneInfo("America/Toronto"),
+    )
+    assert rows[0].status == status and rows[0].summary is None
+    assert rows[1].status == "MISSING_AFFILIATION" and rows[1].summary is None
+
+
 def test_players_on_same_team_share_one_summary(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

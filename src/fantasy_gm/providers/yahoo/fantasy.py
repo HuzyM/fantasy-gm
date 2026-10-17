@@ -389,13 +389,6 @@ def _professional_team(
     Its Washington example uses Was; PuckAPI's club directory uses WSH.
     No other aliases or numeric editorial-team identity mappings are inferred.
     """
-    if not any(c.tag.split("}")[-1] == "editorial_team_abbr" for c in player):
-        return None, None
-    if _one(player, "editorial_team_abbr", ns).attrib:
-        raise ValueError()
-    code = _text(player, "editorial_team_abbr", ns)
-    if not re.fullmatch(r"[A-Za-z]{2,3}", code):
-        raise ValueError()
     team_key: str | None = None
     if any(c.tag.split("}")[-1] == "editorial_team_key" for c in player):
         if _one(player, "editorial_team_key", ns).attrib or not re.fullmatch(
@@ -403,6 +396,13 @@ def _professional_team(
         ):
             raise ValueError()
         team_key = _text(player, "editorial_team_key", ns)
+    if not any(c.tag.split("}")[-1] == "editorial_team_abbr" for c in player):
+        return None, team_key
+    if _one(player, "editorial_team_abbr", ns).attrib:
+        raise ValueError()
+    code = _text(player, "editorial_team_abbr", ns)
+    if not re.fullmatch(r"[A-Za-z]{2,3}", code):
+        raise ValueError()
     code = code.upper()
     return ("WSH" if code == "WAS" else code), team_key
 
@@ -507,6 +507,9 @@ def _normalize_roster(
         professional_team_unverified = False
         try:
             professional_team_code, professional_key = _professional_team(player, ns)
+            if professional_team_code is None and professional_key is not None:
+                # A valid numeric key alone cannot establish an NHL affiliation.
+                professional_team_unverified = context_unverified = True
         except ValueError:
             if strict:
                 raise
