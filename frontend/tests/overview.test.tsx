@@ -54,7 +54,7 @@ describe('Overview', () => {
       screen.queryByRole('complementary', { name: 'Player inspection' }),
     ).not.toBeInTheDocument();
   });
-  it('expands actual day fixtures and explains unsupported actions without navigating to another screen', async () => {
+  it('expands actual day fixtures and opens comparison from the roster', async () => {
     const user = userEvent.setup();
     render(<App />);
     const monday = screen.getByRole('article', { name: /Monday, December 7/ });
@@ -62,9 +62,6 @@ describe('Overview', () => {
     await user.click(within(monday).getByRole('button', { name: /3 more games/ }));
     expect(within(monday).getAllByRole('listitem')).toHaveLength(6);
     await user.click(screen.getByRole('button', { name: 'Compare players' }));
-    expect(screen.getByRole('status')).toHaveTextContent(
-      'Player Comparison is planned for a later milestone.',
-    );
-    expect(screen.getByRole('heading', { name: 'My Roster' })).toBeVisible();
+    expect(screen.getByRole('heading', { level: 1, name: 'Player Comparison' })).toBeVisible();
   });
 });

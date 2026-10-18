@@ -3,7 +3,9 @@ import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 const axe = await readFile(require.resolve('axe-core/axe.min.js'), 'utf8');
-const routes = (process.env.SCREEN_ROUTES || 'roster,profile/matthews').split(',');
+const routes = (process.env.SCREEN_ROUTES || 'roster,profile/matthews,planner,comparison').split(
+  ',',
+);
 const sizes = [
   ['desktop', 1672, 941],
   ['laptop', 1440, 900],
@@ -81,6 +83,29 @@ for (const route of routes)
         await expect(page.getByText('No game-log provider is connected.')).toBeVisible();
         await page.keyboard.press('Home');
         await expect(page.getByRole('tab', { name: 'Season Stats', exact: true })).toHaveAttribute(
+          'aria-selected',
+          'true',
+        );
+      }
+      if (route === 'planner') {
+        await page.getByRole('button', { name: 'Select COL @ STL', exact: true }).click();
+        await expect(
+          page
+            .getByRole('complementary', { name: 'Selected matchup' })
+            .getByRole('heading', { name: 'COL @ STL' }),
+        ).toBeVisible();
+        await page.getByRole('button', { name: 'Next week', exact: true }).click();
+        await expect(page.getByText('Schedule coverage is unknown for this date.')).toBeVisible();
+      }
+      if (route === 'comparison') {
+        const first = await page.getByLabel('First player', { exact: true }).inputValue();
+        const second = await page.getByLabel('Second player', { exact: true }).inputValue();
+        await page.getByRole('button', { name: 'Swap players', exact: true }).click();
+        await expect(page.getByLabel('First player', { exact: true })).toHaveValue(second);
+        await expect(page.getByLabel('Second player', { exact: true })).toHaveValue(first);
+        await page.getByRole('tab', { name: 'Statistics', exact: true }).click();
+        await page.keyboard.press('End');
+        await expect(page.getByRole('tab', { name: 'History', exact: true })).toHaveAttribute(
           'aria-selected',
           'true',
         );

@@ -107,10 +107,11 @@ export function AppShell({
               aria-label={`${String(index + 1).padStart(2, '0')} ${name}`}
               className={`nav-item ${current === route || (current === 'profile' && route === 'roster') ? 'selected' : ''}`}
               aria-current={current === route ? 'page' : undefined}
-              aria-disabled={!['overview', 'roster'].includes(route)}
+              aria-disabled={!['overview', 'roster', 'planner', 'comparison'].includes(route)}
 
               onClick={() => {
-                if (route === 'overview' || route === 'roster') onNavigate?.(route);
+                if (['overview', 'roster', 'planner', 'comparison'].includes(route))
+                  onNavigate?.(route);
                 else onNotice(`${name} is planned for a later milestone.`);
                 closeMenu();
               }}

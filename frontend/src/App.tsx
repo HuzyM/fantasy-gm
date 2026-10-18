@@ -4,13 +4,17 @@ import { AppShell } from './components/AppShell';
 import Overview from './screens/Overview';
 import MyRoster from './screens/MyRoster';
 import PlayerProfile from './screens/PlayerProfile';
+import SchedulePlanner from './screens/SchedulePlanner';
+import PlayerComparison from './screens/PlayerComparison';
 import { overviewFixture } from './fixtures/overview';
 import './application.css';
 
 function readRoute(): { screen: Screen; playerId?: string } {
   const [screen = '', playerId] = window.location.hash.slice(1).split('/');
   return {
-    screen: ['roster', 'profile'].includes(screen) ? (screen as Screen) : 'overview',
+    screen: ['roster', 'profile', 'planner', 'comparison'].includes(screen)
+      ? (screen as Screen)
+      : 'overview',
     playerId,
   };
 }
@@ -27,7 +31,7 @@ export default function App() {
     return () => window.removeEventListener('hashchange', update);
   }, []);
   function navigate(screen: Screen, playerId?: string) {
-    if (!['overview', 'roster', 'profile'].includes(screen)) {
+    if (!['overview', 'roster', 'profile', 'planner', 'comparison'].includes(screen)) {
       setNotice('Player Comparison is planned for a later milestone.');
       return;
     }
@@ -58,6 +62,8 @@ export default function App() {
       {route.screen === 'overview' && <Overview {...props} />}
       {route.screen === 'roster' && <MyRoster {...props} />}
       {route.screen === 'profile' && <PlayerProfile {...props} selectedId={route.playerId} />}
+      {route.screen === 'planner' && <SchedulePlanner {...props} />}
+      {route.screen === 'comparison' && <PlayerComparison {...props} selectedId={route.playerId} />}
       {notice && (
         <div className="notice visible" role="status">
           {notice}
