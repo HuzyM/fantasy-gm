@@ -5,6 +5,7 @@ import { Button } from '../components/primitives';
 import { PlayerInspection } from '../components/PlayerInspection';
 import { RosterTable } from '../components/RosterTable';
 import { WeekSchedule } from '../components/WeekSchedule';
+import { ImageCredits } from '../components/ImageCredits';
 import { daysForWeek, overviewFixture } from '../fixtures/overview';
 import type { PositionGroup } from '../view-model';
 import { filterPlayers, shiftWeek } from '../view-model';
@@ -17,6 +18,7 @@ export default function Overview() {
   const [selectedDay, setSelectedDay] = useState(overviewFixture.weekStart);
   const [notice, setNotice] = useState('');
   const [showNotes, setShowNotes] = useState(false);
+  const [showCredits, setShowCredits] = useState(false);
   const selectedPlayer = overviewFixture.players.find((player) => player.id === selectedId);
   const filtered = filterPlayers(overviewFixture.players, search, group);
   const referenceWeek = start === overviewFixture.weekStart;
@@ -65,11 +67,15 @@ export default function Overview() {
           <span className="demo-indicator" />
           SOURCE: SYNTHETIC FIXTURES
         </span>
-        <p>No live connection. Illustrative players, artwork and statistics.</p>
+        <p>No live connection. Synthetic statistics; historical licensed photos.</p>
+        <button onClick={() => setShowCredits(!showCredits)} aria-expanded={showCredits}>
+          Image credits
+        </button>
         <button onClick={() => setShowNotes(!showNotes)} aria-expanded={showNotes}>
           <Info size={13} /> Data notes
         </button>
       </footer>
+      {showCredits && <ImageCredits />}
       {showNotes && (
         <section className="panel data-notes" aria-label="Data certainty notes">
           <h2>Clear about what we know</h2>

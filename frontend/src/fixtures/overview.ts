@@ -1,29 +1,74 @@
 import type { Datum, Game, OverviewModel, Player } from '../view-model';
 const known = <T>(value: T): Datum<T> => ({ state: 'verified', value });
 const playerRows = [
-  ['makar', 'Cale Makar', 8, 'COL', 'D', 'defense', 0, '@ STL · Mon 7:00', 48.6, 6.8],
-  ['bouchard', 'Evan Bouchard', 2, 'EDM', 'D', 'defense', 1, '@ VGK · Tue 7:00', 43.2, 6.1],
-  ['mackinnon', 'Nathan MacKinnon', 29, 'COL', 'C', 'forwards', 2, '@ STL · Mon 7:00', 52.1, 7.7],
-  ['kucherov', 'Nikita Kucherov', 86, 'TBL', 'RW', 'forwards', 3, 'vs FLA · Tue 7:00', 48.9, 7.3],
-  ['matthews', 'Auston Matthews', 34, 'TOR', 'C', 'forwards', 4, '@ BUF · Mon 7:00', 46.8, 6.9],
-  ['pastrnak', 'David Pastrnak', 88, 'BOS', 'RW', 'forwards', 5, '@ DET · Mon 7:00', 44.2, 6.6],
+  ['makar', 'Cale Makar', 8, 'COL', 'D', 'defense', 8480069, '@ STL · Mon 7:00', 48.6, 6.8],
+  ['bouchard', 'Evan Bouchard', 2, 'EDM', 'D', 'defense', 8480803, '@ VGK · Tue 7:00', 43.2, 6.1],
+  [
+    'mackinnon',
+    'Nathan MacKinnon',
+    29,
+    'COL',
+    'C',
+    'forwards',
+    8477492,
+    '@ STL · Mon 7:00',
+    52.1,
+    7.7,
+  ],
+  [
+    'kucherov',
+    'Nikita Kucherov',
+    86,
+    'TBL',
+    'RW',
+    'forwards',
+    8476453,
+    'vs FLA · Tue 7:00',
+    48.9,
+    7.3,
+  ],
+  [
+    'matthews',
+    'Auston Matthews',
+    34,
+    'TOR',
+    'C',
+    'forwards',
+    8479318,
+    '@ BUF · Mon 7:00',
+    46.8,
+    6.9,
+  ],
+  [
+    'pastrnak',
+    'David Pastrnak',
+    88,
+    'BOS',
+    'RW',
+    'forwards',
+    8477956,
+    '@ DET · Mon 7:00',
+    44.2,
+    6.6,
+  ],
 ] as const;
-export const players: readonly Player[] = playerRows.map(
-  ([id, name, number, team, position, group, avatar, nextGame, points, average], i) => ({
+const nhlPlayers: readonly Player[] = playerRows.map(
+  ([id, name, number, team, position, group, nhlId, nextGame, points, average], i) => ({
     id,
     name,
     number,
     team,
     position,
     group,
-    avatar,
+    nhlId,
+    rosterSlot: known(position),
     nextGame,
     weeklyPoints: known(points),
     average: known(average),
-    status:
-      i === 5
-        ? { state: 'unknown', reason: 'Player availability has not been supplied.' }
-        : known('Active'),
+    injury: {
+      state: 'unknown',
+      reason: 'No current injury report is supplied for this real player.',
+    },
     stats: [
       { label: 'GP', datum: known(17 + i) },
       {
@@ -37,6 +82,47 @@ export const players: readonly Player[] = playerRows.map(
     ],
   }),
 );
+// Fictional people demonstrate injury UI without inventing injuries for NHL athletes.
+const demoRows: readonly Omit<Player, 'nextGame' | 'weeklyPoints' | 'average' | 'stats'>[] = [
+  {
+    id: 'demo-dtd',
+    name: 'Demo Forward',
+    number: 0,
+    team: 'DEMO',
+    position: 'RW',
+    group: 'forwards',
+    rosterSlot: known('BN'),
+    injury: known('DTD'),
+  },
+  {
+    id: 'demo-ir',
+    name: 'Demo Goalie',
+    number: 0,
+    team: 'DEMO',
+    position: 'G',
+    group: 'goalies',
+    rosterSlot: known('IR'),
+    injury: known('IR+'),
+  },
+  {
+    id: 'demo-healthy',
+    name: 'Demo Healthy',
+    number: 0,
+    team: 'DEMO',
+    position: 'C',
+    group: 'forwards',
+    rosterSlot: known('BN'),
+    injury: known('Healthy'),
+  },
+];
+const demoPlayers: readonly Player[] = demoRows.map((player) => ({
+  ...player,
+  nextGame: 'Unknown',
+  weeklyPoints: { state: 'unknown', reason: 'Fictional injury example; no performance data.' },
+  average: { state: 'unknown', reason: 'No performance data.' },
+  stats: [],
+}));
+export const players: readonly Player[] = [...nhlPlayers, ...demoPlayers];
 const matchups = [
   [
     ['TOR', 'BUF'],
@@ -153,11 +239,3 @@ export function daysForWeek(start: string) {
     };
   });
 }
-export const teamNames: Readonly<Record<string, string>> = {
-  COL: 'Colorado Avalanche',
-  EDM: 'Edmonton Oilers',
-  TBL: 'Tampa Bay Lightning',
-  TOR: 'Toronto Maple Leafs',
-  BOS: 'Boston Bruins',
-  NYR: 'New York Rangers',
-};

@@ -1,7 +1,9 @@
 import { ArrowDownWideNarrow, MoreVertical, Users } from 'lucide-react';
 import { useState } from 'react';
 import type { Player, PositionGroup } from '../view-model';
-import { Button, DataValue, Panel, PlayerAvatar, TeamMark } from './primitives';
+import { filterPlayers, isInjured } from '../view-model';
+import { Button, DataValue, Panel, TeamMark } from './primitives';
+import { PlayerHeadshot } from './PlayerHeadshot';
 import { Tabs } from './Tabs';
 
 const groups = [
@@ -9,6 +11,7 @@ const groups = [
   ['forwards', 'Forwards'],
   ['defense', 'Defense'],
   ['goalies', 'Goalies'],
+  ['injured', 'Injured'],
 ] as const;
 
 export function RosterTable({
@@ -69,14 +72,12 @@ export function RosterTable({
           value: key,
           label: (
             <>
-              {label}{' '}
-              <span>
-                (
-                {key === 'all'
-                  ? allPlayers.length
-                  : allPlayers.filter((p) => p.group === key).length}
-                )
-              </span>
+              {label} <span>({filterPlayers(allPlayers, '', key).length})</span>
+              {key === 'injured' && (
+                <span className="sr-only">
+                  reported designations; unknown injury status does not mean healthy
+                </span>
+              )}
             </>
           ),
         }))}
@@ -97,7 +98,7 @@ export function RosterTable({
               <th scope="col">NEXT TEAM GAME</th>
               <th scope="col">FPTS L7</th>
               <th scope="col">AVG</th>
-              <th scope="col">STATUS</th>
+              <th scope="col">INJURY</th>
               <th scope="col">
                 <span className="sr-only">Inspect</span>
               </th>
@@ -106,7 +107,9 @@ export function RosterTable({
           <tbody>
             {sorted.map((player) => (
               <tr key={player.id} className={selectedId === player.id ? 'selected-player' : ''}>
-                <td>{player.position}</td>
+                <td>
+                  <DataValue datum={player.rosterSlot} />
+                </td>
                 <td>
                   <button
                     className="player-name"
@@ -114,8 +117,13 @@ export function RosterTable({
                     aria-pressed={selectedId === player.id}
                     onClick={() => onSelect(player.id)}
                   >
-                    <PlayerAvatar index={player.avatar} name={player.name} />
-                    <span>{player.name}</span>
+                    <PlayerHeadshot nhlId={player.nhlId} name={player.name} />
+                    <span>
+                      {player.name}
+                      {player.nhlId === undefined && (
+                        <small className="fictional-label">Fictional demo</small>
+                      )}
+                    </span>
                   </button>
                 </td>
                 <td>
@@ -132,8 +140,8 @@ export function RosterTable({
                 <td>
                   <DataValue datum={player.average} format={(n) => n.toFixed(1)} />
                 </td>
-                <td className="status-cell">
-                  <DataValue datum={player.status} />
+                <td className={`status-cell ${isInjured(player) ? 'injury-reported' : ''}`}>
+                  <DataValue datum={player.injury} />
                 </td>
                 <td>
                   <button
@@ -151,10 +159,17 @@ export function RosterTable({
         {players.length === 0 && (
           <div className="empty-roster">
             <Users size={28} />
-            <p>No players match your filters.</p>
+            <p>
+              {group === 'injured'
+                ? allPlayers.some(isInjured)
+                  ? 'No injured players match your search.'
+                  : 'No reported injury designations.'
+                : 'No players match your filters.'}
+            </p>
+            {group === 'injured' && <p>Unknown injury status does not mean healthy.</p>}
             <Button
               onClick={() =>
-                onNotice('Clear the search or choose a different position group to see players.')
+                onNotice('Clear the search or choose a different roster filter to see players.')
               }
             >
               Filter help
@@ -164,7 +179,7 @@ export function RosterTable({
       </div>
       <p className="roster-footnote">
         DEMO DATA <span>·</span> FANTASY STATS SUBJECT TO LEAGUE SCORING <span>·</span> TEAM GAME ≠
-        PLAYER APPEARANCE
+        PLAYER APPEARANCE <span>·</span> INJURY EXAMPLES USE FICTIONAL PLAYERS
       </p>
     </Panel>
   );

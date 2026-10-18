@@ -8,7 +8,8 @@ export type Datum<T> =
 export type Provenance =
   | { readonly kind: 'synthetic'; readonly label: string }
   | { readonly kind: 'provider'; readonly name: string; readonly observedAt: string };
-export type PositionGroup = 'all' | 'forwards' | 'defense' | 'goalies';
+export type PositionGroup = 'all' | 'forwards' | 'defense' | 'goalies' | 'injured';
+export type InjuryDesignation = 'Healthy' | 'DTD' | 'Out' | 'IR' | 'IR+';
 export type InspectorTab = 'Overview' | 'Stats' | 'Schedule' | 'Game log';
 export interface Game {
   readonly id: string;
@@ -27,12 +28,13 @@ export interface Player {
   readonly number: number;
   readonly team: string;
   readonly position: string;
-  readonly group: Exclude<PositionGroup, 'all'>;
-  readonly avatar: number;
+  readonly group: Exclude<PositionGroup, 'all' | 'injured'>;
+  readonly nhlId?: number;
+  readonly rosterSlot: Datum<string>;
   readonly nextGame: string;
   readonly weeklyPoints: Datum<number>;
   readonly average: Datum<number>;
-  readonly status: Datum<string>;
+  readonly injury: Datum<InjuryDesignation>;
   readonly stats: readonly { readonly label: string; readonly datum: Datum<number> }[];
 }
 export interface OverviewModel {
@@ -60,15 +62,25 @@ export function shiftWeek(start: string, direction: number): string {
   date.setUTCDate(date.getUTCDate() + direction * 7);
   return date.toISOString().slice(0, 10);
 }
-export function filterPlayers<T extends Pick<Player, 'name' | 'team' | 'group'>>(
-  players: readonly T[],
-  query: string,
-  group: PositionGroup,
-): T[] {
+/** Only a reported designation counts; an IR roster slot is not an injury report. */
+export function isInjured<T extends { readonly injury?: Datum<InjuryDesignation> }>(
+  player: T,
+): boolean {
+  const injury = player.injury;
+  return (
+    !!injury &&
+    (injury.state === 'verified' || injury.state === 'incomplete') &&
+    ['DTD', 'Out', 'IR', 'IR+'].includes(injury.value)
+  );
+}
+
+export function filterPlayers<
+  T extends Pick<Player, 'name' | 'team' | 'group'> & Partial<Pick<Player, 'injury'>>,
+>(players: readonly T[], query: string, group: PositionGroup): T[] {
   const normalized = query.trim().toLocaleLowerCase('en-US');
   return players.filter(
     (player) =>
-      (group === 'all' || player.group === group) &&
+      (group === 'all' || (group === 'injured' ? isInjured(player) : player.group === group)) &&
       `${player.name} ${player.team}`.toLocaleLowerCase('en-US').includes(normalized),
   );
 }

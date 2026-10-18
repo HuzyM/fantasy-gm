@@ -29,6 +29,18 @@ try {
   });
   await page.goto('http://127.0.0.1:4173/');
   await page.evaluate(() => document.fonts.ready);
+  await page.waitForFunction(() => Array.from(document.images).every((image) => image.complete));
+  await page
+    .locator('img')
+    .evaluateAll(async (images) => Promise.all(images.map((image) => image.decode())));
+  await page.waitForFunction(() => !document.querySelector('[data-image-state="loading"]'));
+  assert.equal(
+    await page
+      .locator('img')
+      .evaluateAll((images) => images.every((image) => image.naturalWidth > 0)),
+    true,
+    'Every local player photograph and team logo must load',
+  );
   const sizes = [
     ['desktop', 1672, 941],
     ['laptop', 1440, 900],
@@ -46,6 +58,44 @@ try {
       path: fileURLToPath(new URL(`overview-${name}.png`, output)),
       fullPage: name !== 'desktop',
     });
+    await page.getByRole('tab', { name: /Goalies/ }).click();
+    await page
+      .getByRole('button', { name: 'Inspect Demo Goalie', exact: true })
+      .waitFor({ state: 'visible' });
+    await page.keyboard.press('ArrowRight');
+    await page.locator('#roster-tab-injured[aria-selected="true"]').waitFor();
+    assert.equal(
+      await page.getByRole('tab', { name: /Injured \(2\)/ }).getAttribute('aria-selected'),
+      'true',
+    );
+    const roster = page.getByRole('table', { name: 'My roster' });
+    assert.equal(await roster.getByRole('row').count(), 3, `${name}: two reported injury examples`);
+    await roster
+      .getByRole('button', { name: 'Inspect Demo Forward', exact: true })
+      .waitFor({ state: 'visible' });
+    if (name === 'desktop' || name === 'mobile')
+      await page.screenshot({
+        path: fileURLToPath(new URL(`overview-injured-${name}.png`, output)),
+        fullPage: name !== 'desktop',
+      });
+    await page.getByRole('tab', { name: /Forwards/ }).click();
+    await roster
+      .getByRole('button', { name: 'Inspect Nathan MacKinnon', exact: true })
+      .waitFor({ state: 'visible' });
+    assert.equal(
+      await roster.getByRole('button', { name: 'Inspect Demo Forward', exact: true }).count(),
+      1,
+      'Injured players retain positional membership',
+    );
+    await page.getByRole('tab', { name: /All Players/ }).click();
+    await roster
+      .getByRole('button', { name: 'Inspect Cale Makar', exact: true })
+      .waitFor({ state: 'visible' });
+    assert.equal(
+      await page.evaluate(() => document.documentElement.scrollWidth),
+      width,
+      `${name}: injury navigation must not create page overflow`,
+    );
   }
   await page.setViewportSize({ width: 1672, height: 941 });
   const monday = page.getByRole('article', { name: 'Monday, December 7' });
@@ -75,6 +125,16 @@ try {
   await page.getByRole('button', { name: 'DEMO WEEK', exact: true }).click();
   await page.getByRole('button', { name: 'Inspect Cale Makar', exact: true }).click();
   await page.getByRole('button', { name: 'Data notes', exact: true }).click();
+
+  await page.getByRole('button', { name: 'Image credits', exact: true }).click();
+  assert.equal(
+    await page
+      .getByRole('region', { name: 'Image credits' })
+      .getByRole('link', { name: 'Cale Makar' })
+      .count(),
+    1,
+  );
+  await page.getByRole('button', { name: 'Image credits', exact: true }).click();
   assert.equal(await page.getByRole('region', { name: 'Data certainty notes' }).isVisible(), true);
   await page.getByRole('button', { name: 'Data notes', exact: true }).click();
   await page.setViewportSize({ width: 390, height: 844 });

@@ -1,0 +1,39 @@
+Historical photographs — separate from the code license.
+
+8480069.jpg — Cale Makar
+Photo © Quintin Soloviev; CC BY-SA 4.0
+Source: https://commons.wikimedia.org/wiki/File:Cale_Makar_playing_with_the_Avalanche_in_2020_(Quintin_Soloviev).jpg
+License: https://creativecommons.org/licenses/by-sa/4.0
+Identity: NHL 8480069; Wikidata Q29342308; birth date 1998-10-30
+
+8480803.jpg — Evan Bouchard
+Photo © TheAHL; CC BY 2.0
+Source: https://commons.wikimedia.org/wiki/File:Evan_Bouchard.jpg
+License: https://creativecommons.org/licenses/by/2.0
+Identity: NHL 8480803; Wikidata Q50347957; birth date 1999-10-20
+
+8477492.jpg — Nathan MacKinnon
+Photo © 5of7; CC BY-SA 2.0
+Source: https://commons.wikimedia.org/wiki/File:Nathan_MacKinnon_Avalanche-2.jpg
+License: https://creativecommons.org/licenses/by-sa/2.0
+Identity: NHL 8477492; Wikidata Q1966594; birth date 1995-09-01
+
+8476453.png — Nikita Kucherov
+Photo © Resolute; CC BY-SA 3.0
+Source: https://commons.wikimedia.org/wiki/File:Nikita_Kucherov_140103.png
+License: https://creativecommons.org/licenses/by-sa/3.0
+Identity: NHL 8476453; Wikidata Q1693680; birth date 1993-06-17
+
+8479318.jpg — Auston Matthews
+Photo © Azadeh Kashani; CC BY-SA 4.0
+Source: https://commons.wikimedia.org/wiki/File:Auston_Matthews_9.jpg
+License: https://creativecommons.org/licenses/by-sa/4.0
+Identity: NHL 8479318; Wikidata Q20090644; birth date 1997-09-17
+
+8477956.jpg — David Pastrnak
+Photo © Bostonbruinsfan22; CC BY-SA 4.0
+Source: https://commons.wikimedia.org/wiki/File:David_pastrnak_2019_(cropped).jpg
+License: https://creativecommons.org/licenses/by-sa/4.0
+Identity: NHL 8477956; Wikidata Q16224594; birth date 1996-05-25
+
+UI cropping and dark overlays are adaptations. Adaptations retain each linked license, including applicable share-alike terms. No endorsement is implied.

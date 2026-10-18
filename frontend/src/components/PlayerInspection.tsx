@@ -1,8 +1,9 @@
 import { CalendarDays, Info, X } from 'lucide-react';
 import { useState } from 'react';
 import type { InspectorTab, Player } from '../view-model';
-import { teamNames } from '../fixtures/overview';
-import { DataValue, PlayerAvatar, TeamMark } from './primitives';
+import { teamAssets, playerPhotos } from '../media';
+import { DataValue, TeamMark } from './primitives';
+import { PlayerHeadshot } from './PlayerHeadshot';
 import { Tabs } from './Tabs';
 
 const tabs: readonly InspectorTab[] = ['Overview', 'Stats', 'Schedule', 'Game log'];
@@ -24,14 +25,21 @@ export function PlayerInspection({
           <X size={22} />
         </button>
       </div>
-      <div className={`player-hero ${player.id === 'makar' ? 'featured' : 'alternate'}`}>
-        {player.id !== 'makar' && (
-          <div className="alternate-portrait">
-            <PlayerAvatar index={player.avatar} name={player.name} />
-          </div>
-        )}
+      <div className="player-hero">
+        <PlayerHeadshot nhlId={player.nhlId} name={player.name} variant="hero" />
+        <p
+          className={`inspection-injury ${player.injury.state === 'verified' && player.injury.value !== 'Healthy' ? 'injury-reported' : ''}`}
+        >
+          Injury: <DataValue datum={player.injury} />{' '}
+          <span>
+            · Roster slot: <DataValue datum={player.rosterSlot} />
+          </span>
+        </p>
+
         <div className="player-hero-copy">
-          <span className="jersey-number">#{player.number}</span>
+          <span className="jersey-number">
+            {player.nhlId === undefined ? 'FICTIONAL DEMO' : `#${player.number}`}
+          </span>
           <h3 aria-label={player.name}>
             {player.name.split(' ').slice(0, -1).join(' ')}
             <br />
@@ -43,10 +51,20 @@ export function PlayerInspection({
               <strong>
                 {player.team} <span>·</span> {player.position}
               </strong>
-              <small>{teamNames[player.team] ?? player.team}</small>
+              <small>{teamAssets[player.team]?.name ?? 'Fictional demo club'}</small>
             </div>
           </div>
         </div>
+        {player.nhlId !== undefined && playerPhotos[player.nhlId] && (
+          <a
+            className="portrait-credit"
+            href={playerPhotos[player.nhlId]?.source}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Photo credit / license
+          </a>
+        )}
       </div>
       <Tabs
         className="inspection-tabs"

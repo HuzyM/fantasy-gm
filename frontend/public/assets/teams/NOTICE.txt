@@ -1,0 +1,5 @@
+Official team logos © NHL and respective member clubs. All rights reserved.
+Not licensed under the repository code license. Source URLs and NHL team IDs are in src/media.ts.
+Included for club identification in the review prototype at the user's request. No affiliation or endorsement.
+Redistribution and commercial-use permission has not been established. Resolve the use basis before public/commercial distribution.
+https://www.nhl.com/info/terms-of-service

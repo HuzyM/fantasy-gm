@@ -546,29 +546,40 @@ main {
 }
 .team-mark {
   display: inline-flex;
+  position: relative;
   flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 22px;
-  color: var(--team-color);
-  font-family: 'Barlow Condensed', sans-serif;
-  font-weight: 700;
-  font-style: italic;
-  font-size: 13px;
-  line-height: 1;
-  text-shadow:
-    1px 1px 0 #000,
-    -1px -1px 0 #d7e7ef99,
-    0 0 7px #000;
-  background: linear-gradient(130deg, #cad5dd28, #01081433);
-  border: 1px solid color-mix(in srgb, var(--team-color), transparent 45%);
-  clip-path: polygon(50% 0, 100% 18%, 89% 78%, 50% 100%, 11% 78%, 0 18%);
+  width: 24px;
+  height: 24px;
+  vertical-align: middle;
+  color: #b8d4e7;
+  font-size: 8px;
+}
+.team-mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transform: scale(1.7);
 }
 .team-mark.large {
-  width: 39px;
-  height: 43px;
-  font-size: 28px;
+  width: 46px;
+  height: 46px;
+  font-size: 11px;
+}
+.image-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #112b3d;
+  border-radius: 4px;
+}
+[data-image-state='loading'] .image-fallback {
+  opacity: 0.65;
+}
+[data-image-state='loading'] img {
+  opacity: 0;
 }
 .more-games {
   border: 0;
@@ -674,7 +685,8 @@ main {
 }
 .roster-scroll {
   position: relative;
-  overflow-x: auto;
+  overflow: auto;
+  max-height: 370px;
   scrollbar-color: #22577a #06121f;
   margin-top: 14px;
 }
@@ -753,20 +765,52 @@ tbody tr.selected-player td:last-child {
   width: 100%;
   text-align: left;
 }
-.avatar {
+.headshot {
+  position: relative;
   display: inline-block;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: #112b3d;
+}
+.headshot-roster {
   width: 40px;
   height: 44px;
-  flex-shrink: 0;
-  background: url('/assets/player-portraits.webp') 0 0 / 300% 200% no-repeat;
   border-radius: 7px 7px 0 0;
-}
-.avatar-fallback {
-  background: #122f43;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   font-size: 12px;
+}
+.headshot img {
+  position: absolute;
+  max-width: none;
+  width: var(--photo-width);
+  height: auto;
+  left: 50%;
+  top: 42%;
+  transform: var(--photo-focus);
+}
+.headshot-hero {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  font-size: 44px;
+}
+.headshot-hero img {
+  left: 70%;
+  top: 38%;
+}
+.fictional-label {
+  display: block;
+  color: #a4c3d5;
+  font-size: 10px;
+  font-weight: 400;
+}
+.injury-reported {
+  color: #ffc18e;
+}
+.status-cell.injury-reported {
+  color: #ffc18e;
+  font-weight: 700;
 }
 .team-cell {
   display: flex;
@@ -842,11 +886,36 @@ tbody tr.selected-player td:last-child {
   border-radius: 5px;
   background-color: #06182b;
 }
-.player-hero.featured {
+.player-hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
   background:
-    linear-gradient(90deg, #03121fee 0%, #03121f99 35%, transparent 72%),
-    linear-gradient(0deg, #010c16 0%, transparent 38%),
-    url('/assets/player-feature.webp') center 29% / cover;
+    linear-gradient(90deg, #03121ff5 0%, #03121f99 33%, transparent 75%),
+    linear-gradient(0deg, #010c16 0%, transparent 45%);
+}
+.inspection-injury {
+  position: absolute;
+  top: 8px;
+  left: 10px;
+  z-index: 2;
+  color: #bad2e5;
+  font-size: 10px;
+  padding: 3px 5px;
+  background: #03111ed9;
+  border-radius: 3px;
+}
+.portrait-credit {
+  position: absolute;
+  right: 7px;
+  bottom: 5px;
+  z-index: 2;
+  font-size: 9px;
+  color: #d2e4f1;
+  text-decoration: underline;
+  background: #03111ebf;
+  padding: 2px 3px;
 }
 .player-hero-copy {
   position: absolute;
@@ -889,23 +958,6 @@ tbody tr.selected-player td:last-child {
   letter-spacing: 1.7px;
   text-transform: uppercase;
   margin-top: 4px;
-}
-.alternate {
-  background: radial-gradient(ellipse at right, #0b446c, #061425);
-}
-.alternate-portrait {
-  position: absolute;
-  right: -5px;
-  top: 0;
-  height: 100%;
-  width: 78%;
-  opacity: 0.85;
-}
-.alternate-portrait .avatar {
-  width: 100%;
-  height: 100%;
-  border-radius: 0;
-  mask-image: linear-gradient(90deg, transparent, black 30%);
 }
 .inspection-tabs {
   display: flex;
@@ -1276,9 +1328,6 @@ tbody tr.selected-player td:last-child {
   .player-hero {
     height: 300px;
   }
-  .player-hero.featured {
-    background-position: center 26%;
-  }
   .inspection-tabs {
     justify-content: flex-start;
     gap: 15px;
@@ -1490,5 +1539,40 @@ tbody tr.selected-player td:last-child {
     transition: none !important;
     animation: none !important;
     scroll-behavior: auto !important;
+  }
+}
+
+.roster-scroll thead {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #0b2333;
+}
+.image-credits {
+  margin-top: 16px;
+  padding: 18px;
+  color: #bdd5e6;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.image-credits h2 {
+  color: #e0f2ff;
+  font-size: 20px;
+  margin-bottom: 8px;
+}
+.image-credits ul {
+  padding-left: 20px;
+  margin: 8px 0;
+}
+.image-credits a {
+  color: #75d9ff;
+  text-decoration: underline;
+}
+@media (max-width: 600px) {
+  .roster-tabs {
+    gap: 3px;
+  }
+  .roster-tabs button {
+    flex-shrink: 0;
   }
 }
