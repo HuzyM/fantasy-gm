@@ -98,11 +98,11 @@ for (const route of routes)
         await expect(page.getByText('Schedule coverage is unknown for this date.')).toBeVisible();
       }
       if (route === 'comparison') {
-        const first = await page.getByLabel('First player', { exact: true }).inputValue();
-        const second = await page.getByLabel('Second player', { exact: true }).inputValue();
+        const first = await page.getByRole('combobox', { name: /^First player/ }).inputValue();
+        const second = await page.getByRole('combobox', { name: /^Second player/ }).inputValue();
         await page.getByRole('button', { name: 'Swap players', exact: true }).click();
-        await expect(page.getByLabel('First player', { exact: true })).toHaveValue(second);
-        await expect(page.getByLabel('Second player', { exact: true })).toHaveValue(first);
+        await expect(page.getByRole('combobox', { name: /^First player/ })).toHaveValue(second);
+        await expect(page.getByRole('combobox', { name: /^Second player/ })).toHaveValue(first);
         await page.getByRole('tab', { name: 'Statistics', exact: true }).click();
         await page.keyboard.press('End');
         await expect(page.getByRole('tab', { name: 'History', exact: true })).toHaveAttribute(
