@@ -6,6 +6,7 @@ export default defineConfig({
   server: { host: '127.0.0.1', strictPort: true },
   preview: { host: '127.0.0.1', strictPort: true },
   test: {
+    include: ['tests/**/*.test.{ts,tsx,mjs}'],
     environment: 'jsdom',
     setupFiles: './tests/setup.ts',
     restoreMocks: true,

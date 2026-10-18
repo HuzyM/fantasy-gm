@@ -23,7 +23,11 @@ export function RosterTable({
   onSelect,
   onNotice,
   referenceWeek,
+  detailed = false,
+  onCompare,
 }: {
+  detailed?: boolean;
+  onCompare?: () => void;
   players: readonly Player[];
   allPlayers: readonly Player[];
   group: PositionGroup;
@@ -55,7 +59,11 @@ export function RosterTable({
           <Button
             className="primary"
             aria-label="Compare players"
-            onClick={() => onNotice('Player Comparison is planned for a later milestone.')}
+            onClick={() =>
+              onCompare
+                ? onCompare()
+                : onNotice('Player Comparison is planned for a later milestone.')
+            }
           >
             Compare
           </Button>
@@ -96,6 +104,12 @@ export function RosterTable({
               <th scope="col">TEAM</th>
               <th scope="col">POS</th>
               <th scope="col">NEXT TEAM GAME</th>
+              {detailed &&
+                ['GP', 'G', 'A', 'SOG', 'BLK'].map((label) => (
+                  <th scope="col" key={label}>
+                    {label}
+                  </th>
+                ))}
               <th scope="col">FPTS L7</th>
               <th scope="col">AVG</th>
               <th scope="col">INJURY</th>
@@ -134,6 +148,19 @@ export function RosterTable({
                 </td>
                 <td>{player.position}</td>
                 <td className="next-game">{referenceWeek ? player.nextGame : 'Unknown'}</td>
+                {detailed &&
+                  ['GP', 'G', 'A', 'SOG', 'BLK'].map((label) => (
+                    <td key={label}>
+                      <DataValue
+                        datum={
+                          player.stats.find((stat) => stat.label === label)?.datum ?? {
+                            state: 'unknown',
+                            reason: 'No statistic supplied.',
+                          }
+                        }
+                      />
+                    </td>
+                  ))}
                 <td>
                   <DataValue datum={player.weeklyPoints} format={(n) => n.toFixed(1)} />
                 </td>

@@ -17,15 +17,16 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Button } from './primitives';
+import type { Screen } from '../application';
 
 const navigation = [
-  ['Overview', House],
-  ['Schedule Planner', CalendarDays],
-  ['My Roster', Users],
-  ['Compare Players', ChartNoAxesColumnIncreasing],
-  ['League', Trophy],
-  ['Connections', Link],
-  ['Settings', Settings],
+  ['Overview', House, 'overview'],
+  ['Schedule Planner', CalendarDays, 'planner'],
+  ['My Roster', Users, 'roster'],
+  ['Compare Players', ChartNoAxesColumnIncreasing, 'comparison'],
+  ['League', Trophy, 'league'],
+  ['Connections', Link, 'connections'],
+  ['Settings', Settings, 'settings'],
 ] as const;
 
 export function AppShell({
@@ -33,7 +34,11 @@ export function AppShell({
   search,
   onSearch,
   onNotice,
+  current = 'overview',
+  onNavigate,
 }: {
+  current?: Screen;
+  onNavigate?: (screen: Screen) => void;
   children: ReactNode;
   search: string;
   onSearch: (query: string) => void;
@@ -72,8 +77,8 @@ export function AppShell({
   }, [menuOpen]);
   return (
     <div className="app-shell">
-      <a className="skip-link" href="#overview">
-        Skip to Overview
+      <a className="skip-link" href="#main-content">
+        Skip to content
       </a>
       <aside
         ref={sidebar}
@@ -96,15 +101,17 @@ export function AppShell({
           <X />
         </button>
         <nav aria-label="Screens">
-          {navigation.map(([name, Icon], index) => (
+          {navigation.map(([name, Icon, route], index) => (
             <button
               key={name}
-              className={`nav-item ${index === 0 ? 'selected' : ''}`}
-              aria-current={index === 0 ? 'page' : undefined}
-              aria-disabled={index !== 0}
-              title={index ? `${name} is outside the Overview milestone` : undefined}
+              aria-label={`${String(index + 1).padStart(2, '0')} ${name}`}
+              className={`nav-item ${current === route || (current === 'profile' && route === 'roster') ? 'selected' : ''}`}
+              aria-current={current === route ? 'page' : undefined}
+              aria-disabled={!['overview', 'roster'].includes(route)}
+
               onClick={() => {
-                if (index) onNotice(`${name} is planned for a later milestone.`);
+                if (route === 'overview' || route === 'roster') onNavigate?.(route);
+                else onNotice(`${name} is planned for a later milestone.`);
                 closeMenu();
               }}
             >
@@ -183,7 +190,7 @@ export function AppShell({
             JD
           </Button>
         </header>
-        <main id="overview" tabIndex={-1}>
+        <main id="main-content" tabIndex={-1}>
           {children}
         </main>
       </div>

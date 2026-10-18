@@ -1,0 +1,464 @@
+select {
+  font: inherit;
+  color: inherit;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: #051b2b;
+  padding: 8px;
+  max-width: 100%;
+}
+select:focus-visible,
+summary:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 3px;
+}
+.screen-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: center;
+  padding: 14px 0;
+}
+.screen-heading h1 {
+  font-size: 28px;
+  color: #f0f6ff;
+}
+.screen-heading p,
+.muted {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.screen-tools,
+.section-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.source-banner {
+  font-size: 12px;
+  color: #acdcf2;
+  padding: 8px 12px;
+  border-left: 2px solid var(--cyan);
+  background: #042036;
+  margin: 0 0 12px;
+}
+.roster-main,
+.roster-side {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.roster-page .roster-layout {
+  margin-top: 0;
+  align-items: start;
+}
+.roster-page .roster-scroll {
+  max-height: 500px;
+}
+.roster-page table {
+  min-width: 970px;
+}
+.roster-summary {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  padding: 14px 8px;
+  text-align: center;
+  border-color: #087fbe;
+  gap: 6px;
+}
+.roster-summary > div {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-right: 1px solid var(--border);
+}
+.roster-summary strong {
+  font-size: 24px;
+  color: var(--cyan);
+  font-family: 'Barlow Condensed', sans-serif;
+}
+.roster-summary span {
+  font-size: 12px;
+}
+.roster-subsets {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  min-width: 0;
+}
+.slot-section {
+  min-width: 0;
+  padding: 12px;
+}
+.slot-section h2,
+.read-only-actions h2 {
+  font-size: 18px;
+  margin-bottom: 10px;
+}
+.table-scroll {
+  overflow: auto;
+  position: relative;
+}
+.slot-section table {
+  min-width: 340px;
+  width: 100%;
+}
+.text-button {
+  border: 0;
+  color: inherit;
+  background: none;
+  font-size: 13px;
+  padding: 8px 0;
+  text-align: left;
+}
+.read-only-actions {
+  padding: 15px;
+}
+.read-only-actions p {
+  color: var(--muted);
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+.read-only-actions .button {
+  margin: 4px;
+}
+.profile-link {
+  margin: 12px;
+  width: calc(100% - 24px);
+}
+.profile-back {
+  margin: 8px 0 12px;
+}
+.profile-hero {
+  display: grid;
+  grid-template-columns: 30% 1fr 18%;
+  overflow: hidden;
+  position: relative;
+}
+.profile-portrait {
+  position: relative;
+  height: 285px;
+  background: #062137;
+}
+.profile-portrait .headshot-hero {
+  height: 100%;
+  width: 100%;
+}
+.profile-portrait:after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 70%, #03121f);
+  pointer-events: none;
+}
+.profile-portrait .portrait-credit {
+  z-index: 2;
+}
+.profile-identity {
+  padding: 30px 18px;
+  min-width: 0;
+}
+.profile-identity h1 {
+  font-size: clamp(28px, 3.1vw, 52px);
+  font-family: 'Barlow Condensed', sans-serif;
+  line-height: 1.1;
+  margin-bottom: 15px;
+}
+.profile-identity p {
+  margin: 10px 0;
+}
+.profile-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 13px;
+}
+.profile-status > span {
+  padding: 8px;
+  background: #062b44;
+  border-radius: 5px;
+}
+.profile-club {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.profile-club .team-mark.large {
+  width: 100px;
+  height: 100px;
+}
+.profile-stats {
+  grid-column: 2 / 4;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  padding: 12px;
+  gap: 8px;
+  margin-top: -65px;
+  z-index: 1;
+  align-self: end;
+  background: #03121fe8;
+}
+.profile-stats > div {
+  text-align: center;
+  border-right: 1px solid var(--border);
+}
+.profile-stats strong {
+  display: block;
+  font-size: 25px;
+  color: var(--cyan);
+}
+.profile-stats span {
+  font-size: 12px;
+}
+.profile-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 0.95fr 1fr;
+  gap: 14px;
+  margin-top: 14px;
+  align-items: start;
+}
+.profile-wide,
+.profile-middle,
+.profile-right {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+.profile-grid .panel {
+  padding: 14px;
+  min-width: 0;
+}
+.profile-grid h2 {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 21px;
+  margin-bottom: 10px;
+}
+.section-toolbar h2 {
+  margin-bottom: 0;
+}
+.section-toolbar label {
+  font-size: 12px;
+}
+.performance-panel > p {
+  margin-top: 10px;
+}
+.performance-chart {
+  display: flex;
+  gap: 5px;
+  height: 205px;
+  align-items: end;
+  padding: 8px 0;
+}
+.performance-column {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  font-size: 11px;
+}
+.performance-column > div {
+  margin-top: 5px;
+  min-height: 10px;
+  background: linear-gradient(#009eff, #00376d);
+  border: 1px solid #05acff;
+  border-radius: 3px 3px 0 0;
+}
+.performance-column small {
+  font-size: 10px;
+  color: var(--muted);
+}
+.profile-season table {
+  min-width: 0;
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.profile-season th,
+.profile-season td {
+  text-align: left;
+  padding: 9px;
+  border-bottom: 1px solid #153344;
+}
+.profile-season caption {
+  text-align: left;
+  padding: 12px 8px;
+  color: var(--muted);
+}
+.profile-season .inspection-tabs {
+  overflow: auto;
+}
+.profile-season {
+  overflow: hidden;
+}
+.profile-page,
+.profile-hero,
+.profile-grid {
+  min-width: 0;
+  max-width: 100%;
+}
+.profile-stats > div > strong {
+  font-size: 25px;
+}
+.profile-season tbody td {
+  height: 33px;
+}
+.roster-page .roster-scroll tbody td {
+  height: 43px;
+}
+.roster-page .roster-scroll {
+  max-height: 420px;
+}
+.profile-season .inspection-tabs button {
+  white-space: nowrap;
+}
+.unavailable-state {
+  padding: 28px 10px;
+  line-height: 1.7;
+}
+.unavailable-profile {
+  padding: 25px;
+}
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 11px 2px;
+  border-bottom: 1px solid #173448;
+  font-size: 13px;
+}
+.info-row .data-value {
+  color: #b2c7d8;
+}
+.impact-days {
+  display: flex;
+  justify-content: space-between;
+  padding: 14px 0;
+}
+.impact-days > div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+}
+.observed-dot,
+.unknown-dot {
+  display: block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #21b5d5;
+}
+.unknown-dot {
+  background: #476174;
+}
+.profile-impact p,
+.profile-considerations p,
+.profile-news p {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+.profile-impact .button {
+  margin-top: 15px;
+}
+.profile-game {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 0;
+  border-bottom: 1px solid #173448;
+  font-size: 13px;
+}
+.profile-game span:last-child {
+  margin-left: auto;
+  font-size: 11px;
+}
+.profile-quick .button {
+  margin: 5px 4px 0 0;
+}
+@media (max-width: 1200px) {
+  .profile-grid {
+    grid-template-columns: 1.4fr 1fr;
+  }
+  .profile-right {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+  }
+  .profile-quick {
+    grid-column: 2;
+  }
+  .roster-summary {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .roster-subsets {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 800px) {
+  .profile-hero {
+    grid-template-columns: 40% 1fr;
+  }
+  .profile-club {
+    display: none;
+  }
+  .profile-stats {
+    margin: 0;
+    grid-column: 1 / -1;
+  }
+  .profile-grid {
+    grid-template-columns: 1fr;
+  }
+  .profile-right {
+    grid-column: auto;
+    display: flex;
+  }
+  .profile-portrait {
+    height: 260px;
+  }
+  .profile-identity {
+    padding: 20px 12px;
+  }
+  .profile-identity p {
+    font-size: 13px;
+  }
+  .screen-heading {
+    flex-wrap: wrap;
+  }
+  .roster-summary {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (max-width: 480px) {
+  .profile-hero {
+    grid-template-columns: 1fr;
+  }
+  .profile-portrait {
+    height: 270px;
+  }
+  .profile-identity {
+    padding: 16px;
+  }
+  .profile-stats {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .profile-identity h1 {
+    font-size: 38px;
+  }
+  .section-toolbar {
+    flex-wrap: wrap;
+  }
+  .screen-heading h1 {
+    font-size: 27px;
+  }
+  .roster-summary strong {
+    font-size: 22px;
+  }
+  .profile-game {
+    gap: 8px;
+  }
+}

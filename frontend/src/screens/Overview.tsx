@@ -1,7 +1,6 @@
-import { Info, X } from 'lucide-react';
+import { Info } from 'lucide-react';
 import { useState } from 'react';
-import { AppShell } from '../components/AppShell';
-import { Button } from '../components/primitives';
+import type { ScreenProps } from '../application';
 import { PlayerInspection } from '../components/PlayerInspection';
 import { RosterTable } from '../components/RosterTable';
 import { WeekSchedule } from '../components/WeekSchedule';
@@ -10,17 +9,20 @@ import { daysForWeek, overviewFixture } from '../fixtures/overview';
 import type { PositionGroup } from '../view-model';
 import { filterPlayers, shiftWeek } from '../view-model';
 
-export default function Overview() {
-  const [search, setSearch] = useState('');
+export default function Overview({
+  search,
+  players,
+  onNavigate,
+  onNotice: setNotice,
+}: ScreenProps) {
   const [group, setGroup] = useState<PositionGroup>('all');
   const [selectedId, setSelectedId] = useState<string | undefined>('makar');
   const [start, setStart] = useState(overviewFixture.weekStart);
   const [selectedDay, setSelectedDay] = useState(overviewFixture.weekStart);
-  const [notice, setNotice] = useState('');
   const [showNotes, setShowNotes] = useState(false);
   const [showCredits, setShowCredits] = useState(false);
-  const selectedPlayer = overviewFixture.players.find((player) => player.id === selectedId);
-  const filtered = filterPlayers(overviewFixture.players, search, group);
+  const selectedPlayer = players.find((player) => player.id === selectedId);
+  const filtered = filterPlayers(players, search, group);
   const referenceWeek = start === overviewFixture.weekStart;
   function moveWeek(direction: number) {
     const next = shiftWeek(start, direction);
@@ -32,7 +34,7 @@ export default function Overview() {
     setSelectedDay(overviewFixture.weekStart);
   }
   return (
-    <AppShell search={search} onSearch={setSearch} onNotice={setNotice}>
+    <>
       <WeekSchedule
         days={daysForWeek(start)}
         start={start}
@@ -45,13 +47,14 @@ export default function Overview() {
       <div className={`roster-layout ${selectedPlayer ? '' : 'inspection-closed'}`}>
         <RosterTable
           players={filtered}
-          allPlayers={overviewFixture.players}
+          allPlayers={players}
           group={group}
           onGroup={setGroup}
           selectedId={selectedId}
           onSelect={setSelectedId}
           onNotice={setNotice}
           referenceWeek={referenceWeek}
+          onCompare={() => onNavigate('comparison', selectedId)}
         />
         {selectedPlayer && (
           <PlayerInspection
@@ -59,6 +62,7 @@ export default function Overview() {
             player={selectedPlayer}
             onClose={() => setSelectedId(undefined)}
             referenceWeek={referenceWeek}
+            onProfile={() => onNavigate('profile', selectedPlayer.id)}
           />
         )}
       </div>
@@ -107,21 +111,6 @@ export default function Overview() {
           </dl>
         </section>
       )}
-      <div className={`notice ${notice ? 'visible' : ''}`} role="status" aria-live="polite">
-        {notice && (
-          <>
-            <Info size={18} />
-            <span>{notice}</span>
-            <Button
-              className="icon-button"
-              aria-label="Dismiss notice"
-              onClick={() => setNotice('')}
-            >
-              <X size={18} />
-            </Button>
-          </>
-        )}
-      </div>
-    </AppShell>
+    </>
   );
 }

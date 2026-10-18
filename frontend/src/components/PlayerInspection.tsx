@@ -2,7 +2,7 @@ import { CalendarDays, Info, X } from 'lucide-react';
 import { useState } from 'react';
 import type { InspectorTab, Player } from '../view-model';
 import { teamAssets, getPlayerPhoto } from '../media';
-import { DataValue, TeamMark } from './primitives';
+import { Button, DataValue, TeamMark } from './primitives';
 import { PlayerHeadshot } from './PlayerHeadshot';
 import { Tabs } from './Tabs';
 
@@ -11,7 +11,9 @@ export function PlayerInspection({
   player,
   onClose,
   referenceWeek,
+  onProfile,
 }: {
+  onProfile?: () => void;
   player: Player;
   onClose: () => void;
   referenceWeek: boolean;
@@ -145,6 +147,11 @@ export function PlayerInspection({
           </div>
         )}
       </div>
+      {onProfile && (
+        <Button className="primary profile-link" onClick={onProfile}>
+          View Full Player Profile →
+        </Button>
+      )}
     </aside>
   );
 }
