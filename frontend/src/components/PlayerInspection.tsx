@@ -1,7 +1,7 @@
 import { CalendarDays, Info, X } from 'lucide-react';
 import { useState } from 'react';
 import type { InspectorTab, Player } from '../view-model';
-import { teamAssets, playerPhotos } from '../media';
+import { teamAssets, getPlayerPhoto } from '../media';
 import { DataValue, TeamMark } from './primitives';
 import { PlayerHeadshot } from './PlayerHeadshot';
 import { Tabs } from './Tabs';
@@ -17,6 +17,7 @@ export function PlayerInspection({
   referenceWeek: boolean;
 }) {
   const [tab, setTab] = useState<InspectorTab>('Overview');
+  const photo = getPlayerPhoto(player.nhlId, player.name);
   return (
     <aside className="panel inspection-panel" aria-label="Player inspection">
       <div className="inspection-heading">
@@ -55,13 +56,8 @@ export function PlayerInspection({
             </div>
           </div>
         </div>
-        {player.nhlId !== undefined && playerPhotos[player.nhlId] && (
-          <a
-            className="portrait-credit"
-            href={playerPhotos[player.nhlId]?.source}
-            target="_blank"
-            rel="noreferrer"
-          >
+        {photo && (
+          <a className="portrait-credit" href={photo.source} target="_blank" rel="noreferrer">
             Photo credit / license
           </a>
         )}

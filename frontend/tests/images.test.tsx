@@ -2,6 +2,8 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { PlayerHeadshot } from '../src/components/PlayerHeadshot';
 import { TeamMark } from '../src/components/primitives';
+import { PlayerInspection } from '../src/components/PlayerInspection';
+import { players } from '../src/fixtures/overview';
 
 describe('Identity-safe local player photographs', () => {
   it('exposes loading, then the verified player image after load', () => {
@@ -42,6 +44,20 @@ describe('Identity-safe local player photographs', () => {
     render(<PlayerHeadshot name="Cale Makar" nhlId={8480803} />);
     expect(screen.queryByAltText('Cale Makar photograph')).not.toBeInTheDocument();
     expect(screen.getByRole('img', { name: 'Cale Makar: photo unavailable' })).toBeVisible();
+  });
+
+  it('does not credit a rejected photograph in the inspection panel', () => {
+    const player = players.find((entry) => entry.id === 'makar')!;
+    const { rerender } = render(
+      <PlayerInspection player={{ ...player, nhlId: 8480803 }} referenceWeek onClose={() => {}} />,
+    );
+    expect(screen.getByRole('img', { name: 'Cale Makar: photo unavailable' })).toBeVisible();
+    expect(screen.queryByRole('link', { name: 'Photo credit / license' })).not.toBeInTheDocument();
+    rerender(<PlayerInspection player={player} referenceWeek onClose={() => {}} />);
+    expect(screen.getByRole('link', { name: 'Photo credit / license' })).toHaveAttribute(
+      'href',
+      expect.stringContaining('Cale_Makar'),
+    );
   });
 });
 

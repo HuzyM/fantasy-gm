@@ -20,6 +20,12 @@ export interface TeamAsset {
   readonly logo: string;
   readonly source: string;
 }
+
+/** IDs select assets; conflicting canonical names reject both image and attribution. */
+export function getPlayerPhoto(nhlId: number | undefined, name: string): PlayerPhoto | undefined {
+  const candidate = nhlId === undefined ? undefined : playerPhotos[nhlId];
+  return candidate?.name === name ? candidate : undefined;
+}
 export const playerPhotos: Readonly<Record<number, PlayerPhoto>> = {
   '8480069': {
     name: 'Cale Makar',

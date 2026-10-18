@@ -1,4 +1,4 @@
-import { playerPhotos } from '../media';
+import { getPlayerPhoto } from '../media';
 import { LocalImage } from './LocalImage';
 
 export function PlayerHeadshot({
@@ -10,9 +10,7 @@ export function PlayerHeadshot({
   name: string;
   variant?: 'roster' | 'hero';
 }) {
-  const candidate = nhlId === undefined ? undefined : playerPhotos[nhlId];
-  // IDs choose the asset; an exact canonical-name check rejects conflicting fixtures.
-  const photo = candidate?.name === name ? candidate : undefined;
+  const photo = getPlayerPhoto(nhlId, name);
   return (
     <LocalImage
       key={photo?.src ?? `missing-${nhlId ?? name}`}

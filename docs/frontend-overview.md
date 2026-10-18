@@ -42,7 +42,7 @@ The independent whole-branch review found two substantive issues, both addressed
 - A synthetic fixture lived under a directory excluded by the existing provider-data privacy rule. A tracked-tree export reproduced the broken build. The fixture now lives under `src/fixtures/`; the root ignore rule remains intact. Delivery checks include a fresh Git export, offline dependency installation, tests, production build and browser checks.
 - Calendar buttons omitted counts from accessible names and described unknown coverage as partial. Four regression tests first failed, then passed after each certainty state received its own announcement and the actual reason was connected as an accessible description.
 
-There are 28 unit/component and asset-registry tests. The independent reviewer examined the reference and all four captures. One minor visual difference remains for user review: compact schedule matchup/time typography is smaller than the reference. Automated accessibility results cover the scanned states, not assistive-technology certification or all interactions.
+There are 29 unit/component and asset-registry tests. The independent reviewer examined the reference and all four captures. One minor visual difference remains for user review: compact schedule matchup/time typography is smaller than the reference. Automated accessibility results cover the scanned states, not assistive-technology certification or all interactions.
 
 Fresh-export checks also caught Windows Git converting frontend text files to CRLF, which made the formatter fail despite a successful build. Frontend-scoped Git attributes now keep text as LF without changing Python or root repository rules; the export formatting check was rerun after this correction.
 
