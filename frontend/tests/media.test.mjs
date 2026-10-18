@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { players } from '../src/fixtures/overview';
+import { overviewFixture, players } from '../src/fixtures/overview';
 import { playerPhotos, teamAssets } from '../src/media';
 
 describe('Curated local asset registry', () => {
@@ -24,10 +24,11 @@ describe('Curated local asset registry', () => {
     expect(Object.keys(teamAssets)).toHaveLength(32);
     expect(teamAssets.UTA?.nhlId).toBe(68);
     expect(teamAssets.UTA?.name).toBe('Utah Mammoth');
-    const source = readFileSync('src/fixtures/overview.ts', 'utf8');
-    for (const code of source.matchAll(/\['([A-Z]{3})', '([A-Z]{3})'\]/g)) {
-      expect(teamAssets[code[1]]).toBeDefined();
-      expect(teamAssets[code[2]]).toBeDefined();
+    for (const day of overviewFixture.days) {
+      for (const game of day.games) {
+        expect(teamAssets[game.away]).toBeDefined();
+        expect(teamAssets[game.home]).toBeDefined();
+      }
     }
     for (const [code, team] of Object.entries(teamAssets)) {
       expect(new URL(team.source).origin).toBe('https://assets.nhle.com');

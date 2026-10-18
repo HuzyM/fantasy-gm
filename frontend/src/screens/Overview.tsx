@@ -79,7 +79,10 @@ export default function Overview() {
       {showNotes && (
         <section className="panel data-notes" aria-label="Data certainty notes">
           <h2>Clear about what we know</h2>
-          <p>All values on this page are synthetic fixtures, never verified sports information.</p>
+          <p>
+            Performance and schedules are synthetic fixtures. Photographs and team identities have
+            separate source records; real-player injury reports are unknown.
+          </p>
           <dl>
             <div>
               <dt>Verified</dt>
