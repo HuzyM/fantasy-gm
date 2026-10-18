@@ -4,7 +4,7 @@ This milestone implements **Overview only**, using local synthetic fixtures. It 
 
 ## Run
 
-Node.js 20.19+ or 22.12+ is required. Node 22.15.0 and npm 11.3.0 were used for this milestone.
+Use Node.js 22.x (22.13+), 24.x, or 26+. This matches the shared runtime support of the locked dependencies, including Vitest and jsdom; Node 20, 23 and 25 are unsupported. Node 22.15.0 and npm 11.3.0 were used for validation.
 
 ```sh
 cd frontend

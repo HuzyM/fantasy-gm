@@ -160,7 +160,7 @@ export function AppShell({
             <span className="sr-only">Search roster players or teams</span>
             <input
               type="search"
-              placeholder="Search players, teams, stats…"
+              placeholder="Search roster players or teams…"
               value={search}
               onChange={(event) => onSearch(event.target.value)}
             />
