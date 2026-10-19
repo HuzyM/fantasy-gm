@@ -13,14 +13,15 @@ export function useLocalSession(): LocalSession {
   const capability = useRef<string | null>(null);
   const privateMode = useRef(false);
   const observedMode = useRef(false);
-  const [initialPrivate] = useState(() => {
+  function consumeAccessFragment() {
     if (!window.location.hash.startsWith('#access=')) return false;
     const candidate = window.location.hash.slice(8);
     capability.current = /^[A-Za-z0-9_-]{32,128}$/.test(candidate) ? candidate : null;
     privateMode.current = true;
     window.history.replaceState(null, '', `${window.location.pathname}#overview`);
     return true;
-  });
+  }
+  const [initialPrivate] = useState(consumeAccessFragment);
   const [view, setView] = useState<LocalView | null>(null);
   const [state, setState] = useState<LocalSession['state']>(initialPrivate ? 'loading' : 'offline');
   function clear() {
@@ -88,24 +89,38 @@ export function useLocalSession(): LocalSession {
     }
     void load();
     const timer = window.setInterval(() => void load(), 15000);
-    const expire = window.setTimeout(
-      () => {
-        if (privateMode.current) clear();
-      },
-      20 * 60 * 1000,
-    );
+    let expire: number | undefined;
+    const resetExpiry = () => {
+      window.clearTimeout(expire);
+      expire = window.setTimeout(
+        () => {
+          if (privateMode.current) clear();
+        },
+        20 * 60 * 1000,
+      );
+    };
+    resetExpiry();
+    const access = () => {
+      if (!consumeAccessFragment()) return;
+      setView(null);
+      setState('loading');
+      resetExpiry();
+      void load();
+    };
     const focus = () => void load();
     const pagehide = () => {
       if (privateMode.current) clear();
     };
     window.addEventListener('focus', focus);
     window.addEventListener('pagehide', pagehide);
+    window.addEventListener('hashchange', access);
     return () => {
       controller.abort();
       window.clearInterval(timer);
       window.clearTimeout(expire);
       window.removeEventListener('focus', focus);
       window.removeEventListener('pagehide', pagehide);
+      window.removeEventListener('hashchange', access);
     };
   }, []);
   async function disconnect() {

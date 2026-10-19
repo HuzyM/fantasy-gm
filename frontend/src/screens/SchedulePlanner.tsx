@@ -393,7 +393,11 @@ export default function SchedulePlanner({
               <h2>No matchup selected</h2>
               <p>
                 {unknown
-                  ? 'Load the demo week to explore supplied fixtures.'
+                  ? observed
+                    ? local?.view?.schedule
+                      ? 'Return to the loaded observation window. Coverage outside it is unknown.'
+                      : 'No schedule observation was supplied. Load one through a new human-operated launcher session.'
+                    : 'Load the demo week to explore supplied fixtures.'
                   : 'Change the search or game filter to select a matchup.'}
               </p>
             </div>

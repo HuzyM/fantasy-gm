@@ -109,6 +109,25 @@ for (const width of [1672, 390])
       page.getByRole('heading', { name: 'Private session unavailable', exact: true }),
     ).toBeVisible();
     await expect(page.getByText('Synthetic Protocol Player', { exact: true })).toHaveCount(0);
+    await page.evaluate(() => {
+      window.syntheticDocumentMarker = true;
+    });
+    await page.goto('/#access=synthetic-reopened-capability-12345678901234567890');
+    await expect(
+      page.getByRole('button', { name: 'Inspect Synthetic Protocol Player', exact: true }),
+    ).toBeVisible();
+    expect(await page.evaluate(() => window.syntheticDocumentMarker)).toBe(true);
+    expect(page.url()).toMatch(/#overview$/);
+    expect(requests.at(-1).authorization).toBe(
+      'Bearer synthetic-reopened-capability-12345678901234567890',
+    );
+    expect(
+      await page.evaluate(() => ({
+        local: localStorage.length,
+        session: sessionStorage.length,
+        cookie: document.cookie,
+      })),
+    ).toEqual({ local: 0, session: 0, cookie: '' });
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
     expect(external).toEqual([]);
     expect(errors).toEqual([]);

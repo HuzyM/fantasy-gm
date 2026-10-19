@@ -37,6 +37,188 @@ beforeEach(() =>
 );
 afterEach(() => vi.unstubAllGlobals());
 describe('synthetic tests of private transport boundaries', () => {
+  it('bounds a reopened private session to twenty minutes from its new access fragment', async () => {
+    vi.useFakeTimers();
+    try {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockImplementation((url: string) =>
+          Promise.resolve({
+            ok: true,
+            json: async () =>
+              url.endsWith('/status')
+                ? { mode: 'private', yahoo: 'loaded', schedule: 'unavailable' }
+                : privateResponse,
+          }),
+        ),
+      );
+      render(<App />);
+      await act(async () => {});
+      expect(
+        screen.getByRole('button', { name: 'Inspect Synthetic Private Player' }),
+      ).toBeVisible();
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(10 * 60 * 1000);
+      });
+      await act(async () => {
+        window.history.replaceState(
+          null,
+          '',
+          '#access=synthetic-renewed-capability-12345678901234567890',
+        );
+        fireEvent(window, new HashChangeEvent('hashchange'));
+      });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(10 * 60 * 1000 + 1);
+      });
+      expect(
+        screen.getByRole('button', { name: 'Inspect Synthetic Private Player' }),
+      ).toBeVisible();
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(10 * 60 * 1000);
+      });
+      expect(screen.getByRole('heading', { name: 'Private session unavailable' })).toBeVisible();
+    } finally {
+      vi.clearAllTimers();
+      vi.useRealTimers();
+    }
+  });
+  it('redacts a fresh access fragment and reconnects a mounted locked session', async () => {
+    let available = false;
+    const fetcher = vi.fn().mockImplementation((url: string) =>
+      Promise.resolve({
+        ok: true,
+        json: async () =>
+          url.endsWith('/status')
+            ? { mode: 'private', yahoo: available ? 'loaded' : 'expired', schedule: 'unavailable' }
+            : privateResponse,
+      }),
+    );
+    vi.stubGlobal('fetch', fetcher);
+    render(<App />);
+    await screen.findByRole('heading', { name: 'Private session unavailable' });
+    available = true;
+    act(() => {
+      window.location.hash = '#access=synthetic-reopened-capability-12345678901234567890';
+    });
+    await waitFor(() => {
+      expect(window.location.hash).toBe('#overview');
+      expect(
+        fetcher.mock.calls.filter(([url]) => url === '/api/view').at(-1)?.[1].headers.Authorization,
+      ).toBe('Bearer synthetic-reopened-capability-12345678901234567890');
+    });
+    await screen.findByRole('button', { name: 'Inspect Synthetic Private Player' });
+    expect(window.location.hash).toBe('#overview');
+    const calls = fetcher.mock.calls.filter(([url]) => url === '/api/view');
+    expect(calls.at(-1)?.[1].headers.Authorization).toBe(
+      'Bearer synthetic-reopened-capability-12345678901234567890',
+    );
+    act(() => {
+      window.location.hash = '#access=malformed!';
+    });
+    await screen.findByRole('heading', { name: 'Private session unavailable' });
+    expect(window.location.hash).toBe('#overview');
+    expect(fetcher.mock.calls.filter(([url]) => url === '/api/view')).toHaveLength(calls.length);
+    expect(localStorage.length).toBe(0);
+    expect(sessionStorage.length).toBe(0);
+    expect(window.history.state).toBeNull();
+  });
+  it.each(['response', 'failure'] as const)(
+    'ignores an older private %s after same-document reauthorization',
+    async (outcome) => {
+      let phase = 'initial';
+      let resolveOld: (value: unknown) => void = () => {};
+      let rejectOld: (reason: Error) => void = () => {};
+      const pending = new Promise<unknown>((resolve, reject) => {
+        resolveOld = resolve;
+        rejectOld = reject;
+      });
+      const fetcher = vi.fn().mockImplementation((url: string) => {
+        if (url.endsWith('/status'))
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({ mode: 'private', yahoo: 'loaded', schedule: 'unavailable' }),
+          });
+        if (phase === 'old') return pending;
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            ...privateResponse,
+            league: { ...privateResponse.league, name: `Synthetic ${phase} league` },
+          }),
+        });
+      });
+      vi.stubGlobal('fetch', fetcher);
+      render(<App />);
+      await screen.findByText('Synthetic initial league');
+      phase = 'old';
+      fireEvent.focus(window);
+      await waitFor(() =>
+        expect(fetcher.mock.calls.filter(([url]) => url === '/api/view')).toHaveLength(2),
+      );
+      phase = 'replacement';
+      act(() => {
+        window.location.hash = '#access=synthetic-replacement-capability-12345678901234567890';
+      });
+      await screen.findByText('Synthetic replacement league');
+      await act(async () => {
+        if (outcome === 'failure') rejectOld(new Error('Synthetic older private failure'));
+        else resolveOld({ ok: true, json: async () => privateResponse });
+      });
+      expect(screen.getByText('Synthetic replacement league')).toBeVisible();
+      expect(screen.queryByText('Synthetic private test league')).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('heading', { name: 'Private session unavailable' }),
+      ).not.toBeInTheDocument();
+      expect(window.location.hash).toBe('#overview');
+    },
+  );
+  it.each([false, true])(
+    'keeps empty observed planner guidance separate from demo fixtures (loaded window: %s)',
+    async (loaded) => {
+      const response = {
+        ...privateResponse,
+        schedule: loaded
+          ? {
+              start: '2026-10-19',
+              end: '2026-10-25',
+              timezone: 'America/Toronto',
+              observedAt: '2026-10-19T00:00:00Z',
+              issues: [],
+              days: [],
+              teams: [],
+            }
+          : null,
+      };
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockImplementation((url: string) =>
+          Promise.resolve({
+            ok: true,
+            json: async () =>
+              url.endsWith('/status')
+                ? { mode: 'private', yahoo: 'loaded', schedule: 'unavailable' }
+                : response,
+          }),
+        ),
+      );
+      const user = userEvent.setup();
+      render(<App />);
+      await screen.findByRole('button', { name: 'Inspect Synthetic Private Player' });
+      await user.click(screen.getByRole('button', { name: '02 Schedule Planner' }));
+      if (loaded) await user.click(screen.getByRole('button', { name: 'Next week' }));
+      expect(
+        screen.queryByText('Load the demo week to explore supplied fixtures.'),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.getByText(
+          loaded
+            ? 'Return to the loaded observation window. Coverage outside it is unknown.'
+            : 'No schedule observation was supplied. Load one through a new human-operated launcher session.',
+        ),
+      ).toBeVisible();
+    },
+  );
   it('restores each private profile from memory on Back and Forward without persisting identities', async () => {
     const response = {
       ...privateResponse,
