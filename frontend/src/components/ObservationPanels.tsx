@@ -95,8 +95,11 @@ export function ObservationConnections({ local, onNavigate }: ScreenProps) {
               <p key={i}>{line}</p>
             ))}
             <p>
-              Read-only Yahoo GETs only. No transactions, lineup writes, browser credential input,
-              cookies, saved private data or automated refresh.
+              {privateData
+                ? 'Read-only Yahoo GETs only.'
+                : 'Read-only public PuckAPI schedule requests only; no Yahoo requests.'}{' '}
+              No transactions, lineup writes, browser credential input, cookies, saved private data
+              or automated refresh.
             </p>
             <p>
               Player IDs from Yahoo are not NHL IDs. Photos require a verified crosswalk; no

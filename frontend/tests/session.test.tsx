@@ -37,6 +37,130 @@ beforeEach(() =>
 );
 afterEach(() => vi.unstubAllGlobals());
 describe('synthetic tests of private transport boundaries', () => {
+  it('restores each private profile from memory on Back and Forward without persisting identities', async () => {
+    const response = {
+      ...privateResponse,
+      roster: {
+        ...privateResponse.roster,
+        returnedCount: 2,
+        entries: [
+          ...privateResponse.roster.entries,
+          {
+            ...privateResponse.roster.entries[0],
+            id: 'synthetic-second-id',
+            name: 'Second Player',
+          },
+        ],
+      },
+    };
+    const fetcher = vi.fn().mockImplementation((url: string) =>
+      Promise.resolve({
+        ok: true,
+        json: async () =>
+          url.endsWith('/status')
+            ? { mode: 'private', yahoo: 'loaded', schedule: 'unavailable' }
+            : response,
+      }),
+    );
+    vi.stubGlobal('fetch', fetcher);
+    const user = userEvent.setup();
+    render(<App />);
+    await screen.findByRole('button', { name: 'Inspect Synthetic Private Player' });
+    await user.click(screen.getByRole('button', { name: 'View Full Player Profile →' }));
+    const firstState = window.history.state;
+    await user.click(screen.getByRole('button', { name: 'Back to My Roster' }));
+    await user.click(screen.getByRole('button', { name: 'Inspect Second Player' }));
+    await user.click(screen.getByRole('button', { name: 'View Full Player Profile →' }));
+    const secondState = window.history.state;
+    await user.click(screen.getByRole('button', { name: '06 Connections' }));
+    act(() => window.history.back());
+    expect(await screen.findByRole('heading', { name: 'Second Player', level: 1 })).toBeVisible();
+    act(() => window.history.back());
+    await screen.findByRole('heading', { name: 'My Roster', level: 1 });
+    act(() => window.history.back());
+    expect(
+      await screen.findByRole('heading', { name: 'Synthetic Private Player', level: 1 }),
+    ).toBeVisible();
+    act(() => window.history.forward());
+    await screen.findByRole('heading', { name: 'My Roster', level: 1 });
+    act(() => window.history.forward());
+    expect(await screen.findByRole('heading', { name: 'Second Player', level: 1 })).toBeVisible();
+    // A popstate can change the selection while the redacted #profile URL stays identical.
+    act(() => {
+      window.history.replaceState(firstState, '', '#profile');
+      fireEvent.popState(window, { state: firstState });
+    });
+    expect(
+      screen.getByRole('heading', { name: 'Synthetic Private Player', level: 1 }),
+    ).toBeVisible();
+    expect(window.location.hash).toBe('#profile');
+    for (const state of [firstState, secondState]) {
+      expect(JSON.stringify(state)).not.toMatch(/synthetic-private-id|synthetic-second-id|Player/);
+    }
+    expect(localStorage.length).toBe(0);
+    expect(sessionStorage.length).toBe(0);
+    expect(document.cookie).toBe('');
+    fetcher.mockResolvedValue({
+      ok: true,
+      json: async () => ({ mode: 'private', yahoo: 'expired', schedule: 'unavailable' }),
+    });
+    fireEvent.focus(window);
+    await screen.findByRole('heading', { name: 'Private session unavailable' });
+    act(() => {
+      window.history.replaceState(secondState, '', '#profile');
+      fireEvent.popState(window, { state: secondState });
+    });
+    expect(screen.queryByRole('heading', { name: 'Second Player' })).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Private session unavailable' })).toBeVisible();
+  });
+  it('labels observed roster entries without asserting the total roster size', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((url: string) =>
+        Promise.resolve({
+          ok: true,
+          json: async () =>
+            url.endsWith('/status')
+              ? { mode: 'private', yahoo: 'loaded', schedule: 'unavailable' }
+              : privateResponse,
+        }),
+      ),
+    );
+    const user = userEvent.setup();
+    render(<App />);
+    await screen.findByRole('button', { name: 'Inspect Synthetic Private Player' });
+    await user.click(screen.getByRole('button', { name: '03 My Roster' }));
+    expect(screen.getByText('Returned entries').parentElement).toHaveTextContent('1');
+    expect(screen.queryByText('Roster size')).not.toBeInTheDocument();
+    expect(screen.getByText(/Reported local roster · total, effective coverage/)).toBeVisible();
+  });
+  it('describes public schedule requests without claiming Yahoo access', async () => {
+    window.history.replaceState(null, '', '/#connections');
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((url: string) =>
+        Promise.resolve({
+          ok: true,
+          json: async () =>
+            url.endsWith('/status')
+              ? { mode: 'synthetic', yahoo: 'disconnected', schedule: 'observed' }
+              : {
+                  ...privateResponse,
+                  mode: 'synthetic',
+                  source: 'puckapi',
+                  league: null,
+                  roster: null,
+                },
+        }),
+      ),
+    );
+    render(<App />);
+    expect(
+      await screen.findByText(/Read-only public PuckAPI schedule requests only/),
+    ).toBeVisible();
+    expect(screen.queryByText(/Read-only Yahoo GETs only/)).not.toBeInTheDocument();
+    expect(screen.getByText(/No Yahoo account is connected/)).toBeVisible();
+  });
   it.each(['response', 'failure'] as const)(
     'ignores an older public %s after a newer refresh succeeds',
     async (outcome) => {

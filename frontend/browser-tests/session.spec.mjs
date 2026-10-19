@@ -75,13 +75,38 @@ for (const width of [1672, 390])
     expect(await context.cookies()).toEqual([]);
     if (width < 900)
       await page.getByRole('button', { name: 'Open navigation', exact: true }).click();
+    await page.getByRole('button', { name: '03 My Roster', exact: true }).click();
+    await expect(page.getByText('Returned entries', { exact: true })).toBeVisible();
+    await expect(page.getByText('Roster size', { exact: true })).toHaveCount(0);
+    if (width < 900)
+      await page.getByRole('button', { name: 'Open navigation', exact: true }).click();
     await page.getByRole('button', { name: '06 Connections', exact: true }).click();
+    await expect(page.getByText(/Read-only Yahoo GETs only/)).toBeVisible();
+    await page.goBack();
+    await expect(page.getByRole('heading', { name: 'My Roster', level: 1 })).toBeVisible();
+    await page.goBack();
+    await expect(
+      page.getByRole('heading', { name: 'Synthetic Protocol Player', exact: true, level: 1 }),
+    ).toBeVisible();
+    expect(page.url()).toMatch(/#profile$/);
+    expect(await page.evaluate(() => JSON.stringify(history.state))).not.toContain(
+      'synthetic-protocol-id',
+    );
+    await page.goForward();
+    await expect(page.getByRole('heading', { name: 'My Roster', level: 1 })).toBeVisible();
+    await page.goForward();
+    await expect(page.getByRole('heading', { name: 'Connections', level: 1 })).toBeVisible();
     await page.getByRole('button', { name: 'Disconnect local session', exact: true }).click();
     await expect(
       page.getByRole('heading', { name: 'Private session unavailable', exact: true }),
     ).toBeVisible();
     await expect(page.getByText('Synthetic Protocol Player', { exact: true })).toHaveCount(0);
     await expect(page.getByText('Cale Makar', { exact: true })).toHaveCount(0);
+    await page.goBack();
+    await expect(
+      page.getByRole('heading', { name: 'Private session unavailable', exact: true }),
+    ).toBeVisible();
+    await expect(page.getByText('Synthetic Protocol Player', { exact: true })).toHaveCount(0);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
     expect(external).toEqual([]);
     expect(errors).toEqual([]);
@@ -141,9 +166,12 @@ for (const [from, to] of [
       'data-source',
       to === 'synthetic' ? 'demo' : 'public',
     );
-    if (to === 'puckapi')
+    if (to === 'puckapi') {
       await expect(
         page.getByText('Synthetic replacement observation', { exact: true }),
       ).toBeVisible();
+      await expect(page.getByText(/Read-only public PuckAPI schedule requests only/)).toBeVisible();
+      await expect(page.getByText(/Read-only Yahoo GETs only/)).toHaveCount(0);
+    }
     await expect(page.getByText('Synthetic original observation', { exact: true })).toHaveCount(0);
   });

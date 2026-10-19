@@ -90,7 +90,7 @@ export default function MyRoster({ search, players, onNavigate, onNotice, local 
         <div className="roster-main">
           <Panel className="roster-summary">
             {[
-              ['Roster size', players.length],
+              [observed ? 'Returned entries' : 'Roster size', players.length],
               ['Forwards', players.filter((p) => p.group === 'forwards').length],
               ['Defense', players.filter((p) => p.group === 'defense').length],
               ['Goalies', players.filter((p) => p.group === 'goalies').length],

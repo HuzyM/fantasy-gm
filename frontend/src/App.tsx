@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Screen, DisplayPreferences } from './application';
 import { AppShell } from './components/AppShell';
 import Overview from './screens/Overview';
@@ -33,6 +33,8 @@ function readRoute(): { screen: Screen; playerId?: string } {
 }
 export default function App() {
   const local = useLocalSession();
+  // History contains opaque keys only; private identities stay in this mounted session.
+  const privateRoutes = useRef(new Map<string, { screen: Screen; playerId: string }>());
   const [route, setRoute] = useState(readRoute);
   const [search, setSearch] = useState('');
   const [notice, setNotice] = useState('');
@@ -43,11 +45,17 @@ export default function App() {
   });
   useEffect(() => {
     const update = () => {
-      setRoute(readRoute());
+      const next = readRoute();
+      const saved = privateRoutes.current.get(window.history.state?.privateRouteKey);
+      setRoute(saved?.screen === next.screen ? saved : next);
       setSearch('');
     };
     window.addEventListener('hashchange', update);
-    return () => window.removeEventListener('hashchange', update);
+    window.addEventListener('popstate', update);
+    return () => {
+      window.removeEventListener('hashchange', update);
+      window.removeEventListener('popstate', update);
+    };
   }, []);
   function navigate(screen: Screen, playerId?: string) {
     if (
@@ -65,8 +73,11 @@ export default function App() {
       setNotice('This screen is unavailable.');
       return;
     }
+    const privateRouteKey = local.state === 'private' && playerId ? crypto.randomUUID() : null;
+    if (privateRouteKey && playerId)
+      privateRoutes.current.set(privateRouteKey, { screen, playerId });
     window.history.pushState(
-      null,
+      privateRouteKey ? { privateRouteKey } : null,
       '',
       `#${screen}${playerId && local.state !== 'private' ? `/${encodeURIComponent(playerId)}` : ''}`,
     );
@@ -76,6 +87,7 @@ export default function App() {
     requestAnimationFrame(() => document.getElementById('main-content')?.focus());
   }
   useEffect(() => {
+    if (local.state !== 'private') privateRoutes.current.clear();
     if (local.state === 'locked') {
       setSearch('');
       setNotice('');
