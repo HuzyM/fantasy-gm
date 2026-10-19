@@ -106,3 +106,44 @@ test('synthetic server rotation rejects the old browser capability', async ({ pa
   await expect(page.getByText('Synthetic Protocol Player', { exact: true })).toHaveCount(0);
   await expect(page.getByText('Cale Makar', { exact: true })).toHaveCount(0);
 });
+
+for (const [from, to] of [
+  ['puckapi', 'synthetic'],
+  ['synthetic', 'puckapi'],
+  ['puckapi', 'puckapi'],
+])
+  test(`synthetic successful server rotation ${from} to ${to}`, async ({ page }) => {
+    let currentView = {
+      ...view,
+      mode: 'synthetic',
+      source: from,
+      league: null,
+      roster: null,
+      provenance: ['Synthetic original observation'],
+    };
+    let reads = 0;
+    await page.route('**/api/status', (r) =>
+      r.fulfill({ json: { mode: 'synthetic', yahoo: 'disconnected', schedule: 'observed' } }),
+    );
+    await page.route('**/api/view', (r) => {
+      reads += 1;
+      return r.fulfill({ json: currentView });
+    });
+    await page.goto('/#connections');
+    await expect(page.locator('.screen-content')).toHaveAttribute(
+      'data-source',
+      from === 'synthetic' ? 'demo' : 'public',
+    );
+    currentView = { ...currentView, source: to, provenance: ['Synthetic replacement observation'] };
+    await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+    await expect.poll(() => reads).toBeGreaterThan(1);
+    await expect(page.locator('.screen-content')).toHaveAttribute(
+      'data-source',
+      to === 'synthetic' ? 'demo' : 'public',
+    );
+    if (to === 'puckapi')
+      await expect(
+        page.getByText('Synthetic replacement observation', { exact: true }),
+      ).toBeVisible();
+    await expect(page.getByText('Synthetic original observation', { exact: true })).toHaveCount(0);
+  });

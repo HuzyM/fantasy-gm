@@ -37,7 +37,6 @@ export function useLocalSession(): LocalSession {
       referrerPolicy: 'no-referrer' as const,
       signal: controller.signal,
     };
-    let loaded = false;
     async function load() {
       try {
         const response = await fetch('/api/status', options);
@@ -59,9 +58,8 @@ export function useLocalSession(): LocalSession {
           if (!controller.signal.aborted) clear();
           return;
         }
-        // A restarted private server can report loaded while rejecting this old capability.
-        // Authenticate each private check against the in-memory view; no provider is invoked.
-        if (loaded && !isPrivate) return;
+        // Re-read local memory so a restarted server cannot leave a stale display.
+        // This also authenticates private capabilities; no provider is invoked.
         const requestCapability = capability.current;
         const data = await fetch('/api/view', {
           ...options,
@@ -76,10 +74,8 @@ export function useLocalSession(): LocalSession {
         observedMode.current = parsed.source !== 'synthetic';
         setView(parsed);
         setState(isPrivate ? 'private' : parsed.source === 'puckapi' ? 'public' : 'demo');
-        loaded = true;
       } catch {
         if (controller.signal.aborted) return;
-        if (!privateMode.current) loaded = false;
         if (privateMode.current || observedMode.current) clear();
         else {
           setView(null);

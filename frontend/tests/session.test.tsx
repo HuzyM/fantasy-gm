@@ -37,6 +37,56 @@ beforeEach(() =>
 );
 afterEach(() => vi.unstubAllGlobals());
 describe('synthetic tests of private transport boundaries', () => {
+  it.each([
+    ['puckapi', 'synthetic'],
+    ['synthetic', 'puckapi'],
+    ['puckapi', 'puckapi'],
+  ] as const)('replaces a %s view after a successful server rotation to %s', async (from, to) => {
+    window.history.replaceState(null, '', '/#connections');
+    let currentView = {
+      mode: 'synthetic',
+      source: from as 'synthetic' | 'puckapi',
+      provenance: ['Synthetic original observation'],
+      league: null,
+      roster: null,
+      settings: null,
+      schedule: null,
+    };
+    const fetcher = vi.fn().mockImplementation((url: string) =>
+      Promise.resolve({
+        ok: true,
+        json: async () =>
+          url.endsWith('/status')
+            ? { mode: 'synthetic', yahoo: 'disconnected', schedule: 'observed' }
+            : currentView,
+      }),
+    );
+    vi.stubGlobal('fetch', fetcher);
+    render(<App />);
+    await waitFor(() =>
+      expect(document.querySelector('.screen-content')).toHaveAttribute(
+        'data-source',
+        from === 'synthetic' ? 'demo' : 'public',
+      ),
+    );
+    currentView = { ...currentView, source: to, provenance: ['Synthetic replacement observation'] };
+    fireEvent.focus(window);
+    await waitFor(() =>
+      expect(fetcher.mock.calls.filter(([url]) => url === '/api/view')).toHaveLength(2),
+    );
+    await waitFor(() =>
+      expect(document.querySelector('.screen-content')).toHaveAttribute(
+        'data-source',
+        to === 'synthetic' ? 'demo' : 'public',
+      ),
+    );
+    if (to === 'puckapi')
+      expect(await screen.findByText('Synthetic replacement observation')).toBeVisible();
+    expect(screen.queryByText('Synthetic original observation')).not.toBeInTheDocument();
+    expect(fetcher.mock.calls.every(([url]) => ['/api/status', '/api/view'].includes(url))).toBe(
+      true,
+    );
+  });
   it('recovers a public observation after a transient loopback failure without restoring private capability', async () => {
     window.history.replaceState(null, '', '/#overview');
     let available = true;
