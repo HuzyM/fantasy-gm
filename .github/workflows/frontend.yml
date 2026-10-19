@@ -19,7 +19,9 @@ jobs:
           python-version: '3.12'
       - uses: astral-sh/setup-uv@v6
       - run: uv sync --locked
-      - run: uv run pytest && uv run ruff check src tests && uv run mypy
+      - name: Python regression and Windows-target type checks
+        # Existing private terminal code uses guarded Windows ctypes APIs.
+        run: uv run pytest && uv run ruff check src tests && uv run mypy --platform win32
       - run: npm ci
         working-directory: frontend
       - run: npm run format:check && npm run typecheck && npm test && npm run build
