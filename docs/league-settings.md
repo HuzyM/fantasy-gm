@@ -2,9 +2,9 @@
 
 Dependent milestone: base `feature/dark-arena-planner-comparison` (PR #10). No merges are performed.
 
-League follows the approved standings/current-matchup/weekly-matchups composition, with settings, activity and playoff panels beneath. The supported Riverside sample includes standings sorting, search, expansion and week navigation with clearly labeled synthetic examples. Other preview leagues do not have competition data. Unloaded weeks never inherit example scores. There is no provider-backed scoreboard, probability, activity or qualification claim.
+League follows the approved standings/current-matchup/weekly-matchups composition, with settings, activity and playoff panels beneath. The supported Riverside sample includes standings sorting, search, expansion and week navigation with clearly labeled synthetic examples. Unloaded weeks never inherit example scores. There is no provider-backed scoreboard, probability, activity or qualification claim.
 
-Connections retains the approved account, metrics, league selector, activity, permissions and tools layout, but accurately shows disconnected and unverified state. No account identity, last-sync timestamp, health or token expiry is fabricated. Authentication is not part of this frontend-only milestone.
+Connections retains the approved account, metrics, league preview, activity, permissions and tools layout, but accurately shows disconnected and unverified state. Riverside is the single supported synthetic sample; unsupported demo-league choices are removed. No account identity, last-sync timestamp, health or token expiry is fabricated. Authentication is not part of this frontend-only milestone.
 
 Settings preserves the approved category navigation and general/display/notification/scoring/account panels. Logos, compact spacing and high contrast apply across the app in memory for the current session. Other supported selectors change an explicitly synthetic expandable preview. Notifications, projections, roster percentages and unsupported themes are disabled with explanations. No preferences enter localStorage, cookies or network requests.
 

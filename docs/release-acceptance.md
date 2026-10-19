@@ -14,7 +14,7 @@ milestones. The final branch contains the complete runnable application.
 | Player Profile | Exact selected identity, shared portrait/fallback, stats tabs, schedule and comparison navigation | Licensed photos use verified curated NHL IDs only; unmapped Yahoo identities receive fallbacks; no live performance/history/news/advice |
 | Schedule Planner | Daily away/home matchups, selected-game detail, dates/weeks, roster coverage | Pure Python analysis reused; unverified affiliation joins excluded; coverage, unplaced games and incomplete B2Bs remain explicit |
 | Player Comparison | Two independent selectors, swap, combined search, totals/per-game views and schedules | Provider statistics unavailable; no invented projections or history; two supplied players required |
-| League | Riverside synthetic standings, sort/search and matchup weeks | Other preview leagues have no competition data. Private mode shows reported league/team only; scores/standings/playoffs/settings/activity not fetched by this bounded session |
+| League | Riverside synthetic standings, sort/search and matchup weeks | Private mode shows reported league/team only; scores/standings/playoffs/settings/activity not fetched by this bounded session |
 | Connections | Coarse source state, observation limits, local disconnect | Loaded observation is not ongoing health; provider refresh requires a new human launcher load |
 | Settings | Session-wide logos/spacing/contrast, expandable sample previews and credits | Other selectors affect the labeled preview; no persistence, push alerts, unsupported theme or projection service |
 

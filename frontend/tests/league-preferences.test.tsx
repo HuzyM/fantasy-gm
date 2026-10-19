@@ -26,14 +26,17 @@ describe('League and preferences', () => {
     render(<Connections {...props} />);
     expect(screen.getByRole('heading', { name: 'Disconnected' })).toBeVisible();
     expect(screen.getByText('Never synced')).toBeVisible();
+    expect(screen.getAllByRole('radio')).toHaveLength(1);
+    expect(screen.getByRole('radio')).toBeChecked();
+    expect(screen.getByRole('radio')).toBeDisabled();
+    expect(screen.queryByText('Office Hockey Pool')).not.toBeInTheDocument();
+    expect(screen.queryByText('Keeper Dynasty League')).not.toBeInTheDocument();
     expect(
       screen.queryByText(/Connected & Healthy|john.*@|Token expires/i),
     ).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Sync now/i })).toBeDisabled();
-    await user.click(screen.getByRole('button', { name: /Reset demo selection/i }));
-    expect(props.onNotice).toHaveBeenCalledWith(
-      'Demo league selection reset. No account data was changed.',
-    );
+    await user.click(screen.getByRole('button', { name: /Reset demo view/i }));
+    expect(props.onNotice).toHaveBeenCalledWith('Demo view reset. No account data was changed.');
   });
 
   it('changes only session preview preferences and resets after remount', async () => {

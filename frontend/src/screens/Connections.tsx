@@ -8,7 +8,6 @@ import {
   Link2,
   LockKeyhole,
   RotateCcw,
-  ShieldCheck,
   Trophy,
   Users,
   Wrench,
@@ -27,7 +26,6 @@ export default function Connections(props: ScreenProps) {
   );
 }
 function DemoConnections({ onNavigate, onNotice, local }: ScreenProps) {
-  const [league, setLeague] = useState('riverside');
   const [showGuide, setShowGuide] = useState(false);
   const [showActivity, setShowActivity] = useState(false);
   const leagueNames = [
@@ -37,13 +35,6 @@ function DemoConnections({ onNavigate, onNotice, local }: ScreenProps) {
       details: '12 teams · H2H Points',
       Icon: Trophy,
     },
-    {
-      id: 'office',
-      name: 'Office Hockey Pool',
-      details: '10 teams · H2H Categories',
-      Icon: ShieldCheck,
-    },
-    { id: 'keeper', name: 'Keeper Dynasty League', details: '14 teams · H2H Points', Icon: Trophy },
   ];
   return (
     <div className="connections-screen">
@@ -51,7 +42,7 @@ function DemoConnections({ onNavigate, onNotice, local }: ScreenProps) {
         <Users size={42} />
         <div>
           <h1>Connections</h1>
-          <p>Manage your account, demo leagues, and data access.</p>
+          <p>Manage your account, demo league, and data access.</p>
         </div>
       </div>
       {local?.state === 'demo' && (
@@ -89,7 +80,7 @@ function DemoConnections({ onNavigate, onNotice, local }: ScreenProps) {
               <div>
                 <b>0</b>
                 <span>Connected leagues</span>
-                <small>3 synthetic demos available</small>
+                <small>1 synthetic demo available</small>
               </div>
             </Panel>
             <Panel>
@@ -123,26 +114,20 @@ function DemoConnections({ onNavigate, onNotice, local }: ScreenProps) {
                 <Trophy />
                 <div>
                   <h2>League Selection</h2>
-                  <p>Choose a synthetic league to preview.</p>
+                  <p>Supported synthetic league preview.</p>
                 </div>
               </div>
               <fieldset>
                 <legend className="sr-only">Select demo league</legend>
                 {leagueNames.map(({ id, name, details, Icon }) => (
-                  <label
-                    key={id}
-                    className={
-                      league === id
-                        ? 'connections-league-option connections-league-active'
-                        : 'connections-league-option'
-                    }
-                  >
+                  <label key={id} className="connections-league-option connections-league-active">
                     <input
                       type="radio"
                       name="connections-demo-league"
                       value={id}
-                      checked={league === id}
-                      onChange={() => setLeague(id)}
+                      checked
+                      readOnly
+                      disabled
                     />
                     <span className="connections-demo-crest">
                       <Icon size={36} />
@@ -151,13 +136,13 @@ function DemoConnections({ onNavigate, onNotice, local }: ScreenProps) {
                       <strong>{name}</strong>
                       <small>{details} · 2024–25 sample</small>
                     </span>
-                    {league === id && <span className="connections-chip">Selected</span>}
+                    <span className="connections-chip">Sample</span>
                   </label>
                 ))}
               </fieldset>
               <p className="connections-demo-selection">
-                Selected: {leagueNames.find((item) => item.id === league)?.name}. This preview does
-                not select a provider league.
+                Riverside Hockey League is the supported sample. This preview does not select a
+                provider league.
               </p>
             </Panel>
             <Panel className="connections-sync">
@@ -250,15 +235,15 @@ function DemoConnections({ onNavigate, onNotice, local }: ScreenProps) {
             <Button
               className="connections-tool"
               onClick={() => {
-                setLeague('riverside');
                 setShowActivity(false);
-                onNotice('Demo league selection reset. No account data was changed.');
+                setShowGuide(false);
+                onNotice('Demo view reset. No account data was changed.');
               }}
             >
               <RotateCcw />
               <span>
-                <b>Reset demo selection</b>
-                <small>Return to Riverside in this page</small>
+                <b>Reset demo view</b>
+                <small>Close activity and guidance details</small>
               </span>
             </Button>
           </Panel>
