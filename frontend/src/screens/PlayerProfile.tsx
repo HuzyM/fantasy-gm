@@ -1,3 +1,4 @@
+import { dateLabel } from '../view-model';
 import { isObservation } from '../api';
 import { useState } from 'react';
 import type { ScreenProps } from '../application';
@@ -278,7 +279,9 @@ export default function PlayerProfile({
             {games.length ? (
               games.map((game) => (
                 <div className="profile-game" key={game.id}>
-                  <time dateTime={game.date}>Dec {Number(game.date.slice(-2))}</time>
+                  <time dateTime={game.date}>
+                    {dateLabel(game.date, { month: 'short', day: 'numeric' })}
+                  </time>
                   <TeamMark code={game.away === player.team ? game.home : game.away} />
                   <span>
                     {game.away === player.team ? '@' : 'vs'}{' '}

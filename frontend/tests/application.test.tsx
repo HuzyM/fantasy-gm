@@ -5,6 +5,37 @@ import App from '../src/App';
 
 beforeEach(() => window.history.replaceState(null, '', '/'));
 describe('roster and profile navigation', () => {
+  it('keeps keyboard skip navigation on the current roster screen', async () => {
+    window.history.replaceState(null, '', '/#roster');
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(screen.getByRole('link', { name: 'Skip to content' }));
+    expect(window.location.hash).toBe('#roster');
+    expect(screen.getByRole('main')).toHaveFocus();
+    expect(screen.getByRole('heading', { level: 1, name: 'My Roster' })).toBeVisible();
+  });
+  it('updates the comparison identity when its routed player changes', async () => {
+    window.history.replaceState(null, '', '/#comparison/matthews');
+    const user = userEvent.setup();
+    render(<App />);
+    expect(screen.getByLabelText('First player')).toHaveValue('matthews');
+    await user.click(screen.getByRole('link', { name: 'Fantasy GM Hockey Overview' }));
+    window.location.hash = '#comparison/makar';
+    await screen.findByRole('heading', { name: 'Player Comparison', level: 1 });
+    expect(screen.getByLabelText('First player')).toHaveValue('makar');
+  });
+  it('applies the roster query to bench and reserve sections too', async () => {
+    window.history.replaceState(null, '', '/#roster');
+    const user = userEvent.setup();
+    render(<App />);
+    await user.type(screen.getByRole('searchbox'), 'matthews');
+    expect(
+      within(screen.getByRole('region', { name: /^Bench/ })).queryByText('Demo Forward'),
+    ).not.toBeInTheDocument();
+    expect(
+      within(screen.getByRole('region', { name: /^Injured Reserve/ })).queryByText('Demo Goalie'),
+    ).not.toBeInTheDocument();
+  });
   it('retains display choices across screen navigation without browser storage', async () => {
     window.history.replaceState(null, '', '/#settings');
     const user = userEvent.setup();

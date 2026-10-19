@@ -3,6 +3,7 @@ import { parseView } from './api';
 import type { LocalView } from './api';
 
 export interface LocalSession {
+  private?: boolean;
   view: LocalView | null;
   state: 'offline' | 'loading' | 'demo' | 'private' | 'public' | 'locked';
   disconnect: () => Promise<void>;
@@ -78,6 +79,7 @@ export function useLocalSession(): LocalSession {
         loaded = true;
       } catch {
         if (controller.signal.aborted) return;
+        if (!privateMode.current) loaded = false;
         if (privateMode.current || observedMode.current) clear();
         else {
           setView(null);
@@ -124,5 +126,5 @@ export function useLocalSession(): LocalSession {
       /* Local display stays cleared; server expiry remains bounded. */
     }
   }
-  return { view, state, disconnect };
+  return { view, state, disconnect, private: privateMode.current };
 }

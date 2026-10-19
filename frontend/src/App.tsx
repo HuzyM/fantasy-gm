@@ -62,7 +62,7 @@ export default function App() {
         'settings',
       ].includes(screen)
     ) {
-      setNotice('Player Comparison is planned for a later milestone.');
+      setNotice('This screen is unavailable.');
       return;
     }
     window.history.pushState(
@@ -102,25 +102,34 @@ export default function App() {
         isObservation(local.view)
           ? (local.view?.league?.name ?? 'Public NHL schedule')
           : local.state === 'locked' || local.state === 'loading'
-            ? 'Private local session'
+            ? local.private
+              ? 'Private local session'
+              : 'Local observations'
             : undefined
       }
       contextLabel={
         isObservation(local.view)
           ? 'LOCAL OBSERVATION · READ-ONLY · COVERAGE UNVERIFIED'
           : local.state === 'locked' || local.state === 'loading'
-            ? 'PRIVATE SESSION · NO DATA DISPLAYED'
+            ? local.private
+              ? 'PRIVATE SESSION · NO DATA DISPLAYED'
+              : 'LOCAL OBSERVATION UNAVAILABLE'
             : undefined
       }
     >
       {local.state === 'locked' || local.state === 'loading' ? (
         <section className="panel session-locked">
           <h1>
-            {local.state === 'loading' ? 'Loading local session' : 'Private session unavailable'}
+            {local.state === 'loading'
+              ? 'Loading local session'
+              : local.private
+                ? 'Private session unavailable'
+                : 'Local observation unavailable'}
           </h1>
           <p>
-            Private display data has been cleared. Start or reopen the human-operated local launcher
-            link. No synthetic data is substituted.
+            {local.private
+              ? 'Private display data has been cleared. Start or reopen the human-operated local launcher link. No synthetic data is substituted.'
+              : 'The local observation is unavailable. It will reload from the local server when the service recovers; no provider refresh is requested.'}
           </p>
         </section>
       ) : (

@@ -37,6 +37,45 @@ beforeEach(() =>
 );
 afterEach(() => vi.unstubAllGlobals());
 describe('synthetic tests of private transport boundaries', () => {
+  it('recovers a public observation after a transient loopback failure without restoring private capability', async () => {
+    window.history.replaceState(null, '', '/#overview');
+    let available = true;
+    const publicView = {
+      ...privateResponse,
+      mode: 'synthetic',
+      source: 'puckapi',
+      league: null,
+      roster: null,
+      schedule: null,
+    };
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((url: string) =>
+        available
+          ? Promise.resolve({
+              ok: true,
+              json: async () =>
+                url.endsWith('/status')
+                  ? { mode: 'synthetic', yahoo: 'disconnected', schedule: 'observed' }
+                  : publicView,
+            })
+          : Promise.reject(new Error('Synthetic local outage')),
+      ),
+    );
+    render(<App />);
+    await waitFor(() =>
+      expect(document.querySelector('.screen-content')).toHaveAttribute('data-source', 'public'),
+    );
+    available = false;
+    fireEvent.focus(window);
+    await screen.findByRole('heading', { name: 'Local observation unavailable' });
+    available = true;
+    fireEvent.focus(window);
+    await waitFor(() =>
+      expect(document.querySelector('.screen-content')).toHaveAttribute('data-source', 'public'),
+    );
+    expect(screen.queryByText('Cale Makar')).not.toBeInTheDocument();
+  });
   it('removes the bootstrap fragment, uses a header and displays only supplied observations', async () => {
     const fetcher = vi.fn().mockImplementation((url: string) =>
       Promise.resolve({

@@ -8,7 +8,7 @@ cd frontend
 npm ci
 npm run build
 cd ..
-python -B -m fantasy_gm.web
+uv run python -B -m fantasy_gm.web
 ```
 
 Open `http://127.0.0.1:8765/`. Use `--port 8766` if the default port is busy.
@@ -25,7 +25,7 @@ inspect its private session. Close these tools and disable recording, transcript
 remote views and screen sharing before a human runs:
 
 ```powershell
-python -B -m fantasy_gm.web --private --interactive
+uv run python -B -m fantasy_gm.web --private --interactive
 ```
 
 The existing Yahoo OAuth configuration is read only after interactive confirmation.
@@ -90,9 +90,9 @@ rejected. Browser navigation uses fragments, so all eight screens share `/`.
 Run the offline suites and checks:
 
 ```powershell
-python -m pytest
-python -m ruff check src tests
-python -m mypy
+uv run pytest
+uv run ruff check src tests
+uv run mypy
 cd frontend
 npm test
 npm run build

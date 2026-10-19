@@ -145,13 +145,12 @@ export default function League(props: ScreenProps) {
   );
 }
 function DemoLeague({ search, onNavigate }: ScreenProps) {
-  const [league, setLeague] = useState('riverside');
   const [week, setWeek] = useState(14);
   const [sort, setSort] = useState<Sort>('rank');
   const [descending, setDescending] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [activity, setActivity] = useState('all');
-  const teams = league === 'riverside' ? demoTeams : demoTeams.slice(0, 10);
+  const teams = demoTeams;
   const visibleTeams = teams
     .map((team, rank) => ({ ...team, rank: rank + 1 }))
     .filter((team) => team.name.toLowerCase().includes(search.toLowerCase()))
@@ -164,7 +163,7 @@ function DemoLeague({ search, onNavigate }: ScreenProps) {
             : a.rank - b.rank;
       return descending ? -order : order;
     });
-  const name = league === 'riverside' ? 'Riverside Hockey League' : 'Office Hockey Pool';
+  const name = 'Riverside Hockey League';
   function changeSort(next: Sort) {
     setDescending(sort === next ? !descending : next === 'points');
     setSort(next);
@@ -184,9 +183,8 @@ function DemoLeague({ search, onNavigate }: ScreenProps) {
         </div>
         <label className="league-picker">
           Demo league
-          <select value={league} onChange={(event) => setLeague(event.target.value)}>
+          <select value="riverside" disabled>
             <option value="riverside">Riverside Hockey League</option>
-            <option value="office">Office Hockey Pool</option>
           </select>
         </label>
       </div>

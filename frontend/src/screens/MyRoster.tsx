@@ -56,7 +56,7 @@ function SlotSection({
           </table>
         </div>
       ) : (
-        <p>No players reported in these slots.</p>
+        <p>No players match these slot filters.</p>
       )}
     </section>
   );
@@ -66,6 +66,7 @@ export default function MyRoster({ search, players, onNavigate, onNotice, local 
   const [group, setGroup] = useState<PositionGroup>('all');
   const [selected, setSelected] = useState<string | undefined>(players[0]?.id);
   const player = players.find((p) => p.id === selected);
+  const filteredPlayers = filterPlayers(players, search, group);
   const slot = (p: Player) =>
     p.rosterSlot.state === 'verified' || p.rosterSlot.state === 'incomplete'
       ? p.rosterSlot.value
@@ -103,7 +104,7 @@ export default function MyRoster({ search, players, onNavigate, onNotice, local 
             ))}
           </Panel>
           <RosterTable
-            players={filterPlayers(players, search, group)}
+            players={filteredPlayers}
             allPlayers={players}
             group={group}
             onGroup={setGroup}
@@ -118,12 +119,12 @@ export default function MyRoster({ search, players, onNavigate, onNotice, local 
           <div className="roster-subsets">
             <SlotSection
               title="Bench"
-              players={players.filter((p) => slot(p) === 'BN')}
+              players={filteredPlayers.filter((p) => slot(p) === 'BN')}
               onSelect={setSelected}
             />
             <SlotSection
               title="Injured Reserve"
-              players={players.filter((p) => ['IR', 'IR+'].includes(slot(p)))}
+              players={filteredPlayers.filter((p) => ['IR', 'IR+'].includes(slot(p)))}
               onSelect={setSelected}
             />
           </div>

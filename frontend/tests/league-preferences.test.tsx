@@ -17,8 +17,8 @@ describe('League and preferences', () => {
     expect(within(table).getAllByRole('row')[1]).toHaveTextContent('Bay Area Blades');
     await user.click(screen.getByRole('button', { name: 'Next matchup week' }));
     expect(screen.getByText('No synthetic matchup scores loaded for Week 15.')).toBeVisible();
-    await user.selectOptions(screen.getByLabelText('Demo league'), 'office');
-    expect(screen.getByRole('heading', { name: 'Office Hockey Pool' })).toBeVisible();
+    expect(screen.getByLabelText('Demo league')).toBeDisabled();
+    expect(screen.queryByRole('option', { name: 'Office Hockey Pool' })).not.toBeInTheDocument();
   });
 
   it('shows disconnected and unverified provider state, with no fake sync', async () => {
