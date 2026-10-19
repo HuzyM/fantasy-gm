@@ -1155,9 +1155,6 @@
   .connections-league-option {
     min-height: 86px;
   }
-  .settings-center-bottom {
-    margin-left: -258px;
-  }
   .settings-grid {
     grid-template-columns: 245px minmax(0, 1.45fr) minmax(320px, 1fr);
   }
