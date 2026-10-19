@@ -7,6 +7,20 @@ select {
   padding: 8px;
   max-width: 100%;
 }
+.without-team-logos .team-mark {
+  display: none;
+}
+.compact-display td {
+  height: 38px;
+}
+.compact-display .roster-page .roster-scroll td {
+  height: 38px;
+}
+.high-contrast-display {
+  --muted: #e4edf5;
+  --panel: #020d18;
+  --border: #57839e;
+}
 select:focus-visible,
 summary:focus-visible {
   outline: 2px solid var(--cyan);

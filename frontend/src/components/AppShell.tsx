@@ -17,7 +17,7 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Button } from './primitives';
-import type { Screen } from '../application';
+import type { Screen, DisplayPreferences } from '../application';
 
 const navigation = [
   ['Overview', House, 'overview'],
@@ -36,8 +36,10 @@ export function AppShell({
   onNotice,
   current = 'overview',
   onNavigate,
+  display,
 }: {
   current?: Screen;
+  display?: DisplayPreferences;
   onNavigate?: (screen: Screen) => void;
   children: ReactNode;
   search: string;
@@ -76,7 +78,9 @@ export function AppShell({
     return () => document.removeEventListener('keydown', handleKey);
   }, [menuOpen]);
   return (
-    <div className="app-shell">
+    <div
+      className={`app-shell ${display?.logos === false ? 'without-team-logos' : ''} ${display?.compact ? 'compact-display' : ''} ${display?.contrast ? 'high-contrast-display' : ''}`}
+    >
       <a className="skip-link" href="#main-content">
         Skip to content
       </a>
@@ -107,12 +111,9 @@ export function AppShell({
               aria-label={`${String(index + 1).padStart(2, '0')} ${name}`}
               className={`nav-item ${current === route || (current === 'profile' && route === 'roster') ? 'selected' : ''}`}
               aria-current={current === route ? 'page' : undefined}
-              aria-disabled={!['overview', 'roster', 'planner', 'comparison'].includes(route)}
 
               onClick={() => {
-                if (['overview', 'roster', 'planner', 'comparison'].includes(route))
-                  onNavigate?.(route);
-                else onNotice(`${name} is planned for a later milestone.`);
+                onNavigate?.(route);
                 closeMenu();
               }}
             >

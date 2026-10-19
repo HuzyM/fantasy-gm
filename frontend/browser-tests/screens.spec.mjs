@@ -3,9 +3,10 @@ import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 const axe = await readFile(require.resolve('axe-core/axe.min.js'), 'utf8');
-const routes = (process.env.SCREEN_ROUTES || 'roster,profile/matthews,planner,comparison').split(
-  ',',
-);
+const routes = (
+  process.env.SCREEN_ROUTES ||
+  'roster,profile/matthews,planner,comparison,league,connections,settings'
+).split(',');
 const sizes = [
   ['desktop', 1672, 941],
   ['laptop', 1440, 900],
@@ -109,6 +110,29 @@ for (const route of routes)
           'aria-selected',
           'true',
         );
+      }
+      if (route === 'league') {
+        const table = page.getByRole('table', { name: 'Demo league standings' });
+        await table.getByRole('button', { name: 'Sort by team', exact: true }).click();
+        await expect(table.getByRole('row').nth(1)).toContainText('Bay Area Blades');
+        await page.getByRole('button', { name: 'Next matchup week', exact: true }).click();
+        await expect(
+          page.getByText('No synthetic matchup scores loaded for Week 15.'),
+        ).toBeVisible();
+      }
+      if (route === 'connections') {
+        await expect(page.getByRole('button', { name: /Sync now/ })).toBeDisabled();
+        await page.getByRole('button', { name: /Connection guidance/ }).click();
+        await expect(page.getByText(/Do not paste credentials or tokens here/)).toBeVisible();
+      }
+      if (route === 'settings') {
+        await page.getByRole('switch', { name: 'Show team logos', exact: true }).click();
+        await expect(page.locator('.app-shell')).toHaveClass(/without-team-logos/);
+        await page.getByRole('switch', { name: 'Compact view', exact: true }).click();
+        await expect(page.locator('.app-shell')).toHaveClass(/compact-display/);
+        const nav = page.getByRole('navigation', { name: 'Settings sections' });
+        await nav.getByRole('button', { name: /Notifications/ }).click();
+        await expect(page).toHaveURL(/#settings$/);
       }
       expect(external).toEqual([]);
       expect(errors).toEqual([]);

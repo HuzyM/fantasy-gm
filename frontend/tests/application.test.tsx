@@ -5,6 +5,23 @@ import App from '../src/App';
 
 beforeEach(() => window.history.replaceState(null, '', '/'));
 describe('roster and profile navigation', () => {
+  it('retains display choices across screen navigation without browser storage', async () => {
+    window.history.replaceState(null, '', '/#settings');
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(screen.getByRole('switch', { name: 'Show team logos' }));
+    await user.click(screen.getByRole('switch', { name: 'Compact view' }));
+    expect(document.querySelector('.app-shell')).toHaveClass(
+      'without-team-logos',
+      'compact-display',
+    );
+    await user.click(screen.getByRole('button', { name: '03 My Roster' }));
+    await user.click(screen.getByRole('button', { name: '07 Settings' }));
+    expect(screen.getByRole('switch', { name: 'Show team logos' })).toHaveAttribute(
+      'aria-checked',
+      'false',
+    );
+  });
   it('opens the roster, inspects a player, and opens their full profile with matching identity', async () => {
     const user = userEvent.setup();
     render(<App />);

@@ -15,3 +15,8 @@ export interface ScreenProps {
   onNavigate: (screen: Screen, playerId?: string) => void;
   onNotice: (message: string) => void;
 }
+export interface DisplayPreferences {
+  logos: boolean;
+  compact: boolean;
+  contrast: boolean;
+}
