@@ -23,7 +23,13 @@ export function RosterTable({
   onSelect,
   onNotice,
   referenceWeek,
+  detailed = false,
+  onCompare,
+  isDemo = true,
 }: {
+  detailed?: boolean;
+  isDemo?: boolean;
+  onCompare?: () => void;
   players: readonly Player[];
   allPlayers: readonly Player[];
   group: PositionGroup;
@@ -51,11 +57,17 @@ export function RosterTable({
           <Button onClick={() => setSortByPoints(!sortByPoints)} aria-pressed={sortByPoints}>
             <ArrowDownWideNarrow size={13} /> Fantasy Points
           </Button>
-          <span className="button period-label">{referenceWeek ? 'This Week' : 'Demo Period'}</span>
+          <span className="button period-label">
+            {!isDemo ? 'Reported' : referenceWeek ? 'This Week' : 'Demo Period'}
+          </span>
           <Button
             className="primary"
             aria-label="Compare players"
-            onClick={() => onNotice('Player Comparison is planned for a later milestone.')}
+            onClick={() =>
+              onCompare
+                ? onCompare()
+                : onNotice('Player Comparison is planned for a later milestone.')
+            }
           >
             Compare
           </Button>
@@ -96,6 +108,12 @@ export function RosterTable({
               <th scope="col">TEAM</th>
               <th scope="col">POS</th>
               <th scope="col">NEXT TEAM GAME</th>
+              {detailed &&
+                ['GP', 'G', 'A', 'SOG', 'BLK'].map((label) => (
+                  <th scope="col" key={label}>
+                    {label}
+                  </th>
+                ))}
               <th scope="col">FPTS L7</th>
               <th scope="col">AVG</th>
               <th scope="col">INJURY</th>
@@ -121,7 +139,11 @@ export function RosterTable({
                     <span>
                       {player.name}
                       {player.nhlId === undefined && (
-                        <small className="fictional-label">Fictional demo</small>
+                        <small className="fictional-label">
+                          {player.identitySource === 'yahoo'
+                            ? 'Yahoo identity · NHL match unverified'
+                            : 'Fictional demo'}
+                        </small>
                       )}
                     </span>
                   </button>
@@ -134,6 +156,19 @@ export function RosterTable({
                 </td>
                 <td>{player.position}</td>
                 <td className="next-game">{referenceWeek ? player.nextGame : 'Unknown'}</td>
+                {detailed &&
+                  ['GP', 'G', 'A', 'SOG', 'BLK'].map((label) => (
+                    <td key={label}>
+                      <DataValue
+                        datum={
+                          player.stats.find((stat) => stat.label === label)?.datum ?? {
+                            state: 'unknown',
+                            reason: 'No statistic supplied.',
+                          }
+                        }
+                      />
+                    </td>
+                  ))}
                 <td>
                   <DataValue datum={player.weeklyPoints} format={(n) => n.toFixed(1)} />
                 </td>
@@ -178,8 +213,9 @@ export function RosterTable({
         )}
       </div>
       <p className="roster-footnote">
-        DEMO DATA <span>·</span> FANTASY STATS SUBJECT TO LEAGUE SCORING <span>·</span> TEAM GAME ≠
-        PLAYER APPEARANCE <span>·</span> INJURY EXAMPLES USE FICTIONAL PLAYERS
+        {isDemo ? 'DEMO DATA' : 'LOCAL OBSERVATION · COVERAGE UNVERIFIED'} <span>·</span> FANTASY
+        STATS SUBJECT TO LEAGUE SCORING <span>·</span> TEAM GAME ≠ PLAYER APPEARANCE <span>·</span>{' '}
+        {isDemo ? 'INJURY EXAMPLES USE FICTIONAL PLAYERS' : 'UNKNOWN INJURY ≠ HEALTHY'}
       </p>
     </Panel>
   );

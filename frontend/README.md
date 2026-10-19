@@ -1,60 +1,42 @@
 # Fantasy GM Dark Arena frontend
 
-This milestone implements **Overview only**, using local synthetic fixtures. It does not connect to Python, Yahoo, PuckAPI or MCP. It has no accounts, persistence, analytics, paid services or provider credentials. The other sidebar entries explain that their screens are planned; they do not navigate to placeholder implementations.
+All eight approved screens are implemented as reusable React components: Overview, Schedule Planner, My Roster, Player Profile, Player Comparison, League, Connections and Settings. Player Profile opens contextually from a selected player. Navigation uses a small allowlisted hash route; no routing/state framework or paid service is needed.
 
-## Run
+## Run locally
 
-Use Node.js 22.x (22.13+), 24.x, or 26+. This matches the shared runtime support of the locked dependencies, including Vitest and jsdom; Node 20, 23 and 25 are unsupported. Node 22.15.0 and npm 11.3.0 were used for validation.
+Use Node **22.13+ within 22.x, 24.x, or 26+** (`^22.13.0 || ^24.0.0 || >=26.0.0`) and Python 3.12+. Node 20, 21, 23 and 25 are outside the supported dependency range. CI pins Node 22.15.0.
 
-```sh
-cd frontend
-npm ci --ignore-scripts
-npm run dev
-```
+From the repository root, run `uv sync --locked`, then in this directory run `npm ci` and `npm run build`. Return to the root and run `.venv/Scripts/python.exe -B -m fantasy_gm.web`, or use `scripts/start-local.ps1`. Open http://127.0.0.1:8765/ using the exact numeric host. The default run is synthetic, reads no provider credentials and makes no provider requests. `npm run dev` remains available for frontend-only development.
 
-Open the loopback URL printed by Vite. The production output is static files in `dist/`, with no Node server requirement for the eventual Python integration. All fonts and artwork are local assets.
+The optional private browser session is **human-operated only**: close AI/MCP, browser automation and recording first. See [local application instructions](../docs/local-application.md) before using it. Never paste credentials, tokens or private fantasy information into this chat, tests, screenshots or saved files.
 
-## Check
+## Verification
 
-```sh
-npm test
-npm run typecheck
-npm run format:check
-npm run build
-npm run test:browser
-```
+- `npm run format:check`
+- `npm run typecheck`
+- `npm test`
+- `npm run build`
+- `npm run test:browser` for the retained Overview interaction regression
+- `npx playwright test` for all eight screens at desktop, laptop, tablet and mobile, with axe rules and local assets
+- Set `LOCAL_API=1` to run those checks against the default synthetic Python server. Set `PYTHON_EXECUTABLE` if your interpreter is elsewhere.
+- Set `VISUAL_COMPARE=1` to compare reviewed same-platform screenshots in `docs/frontend/<platform>`. Add `--update-snapshots` only after reviewing intentional changes. CI captures Linux evidence; Windows baselines are not used to assert Linux font rasterization.
 
-The browser check builds the application, starts a temporary loopback preview on port 4173, launches installed Google Chrome headlessly, and closes both on exit. Close another process on that port before running. To use an installed Playwright Chromium instead, install it with `npx playwright install chromium` and set `PLAYWRIGHT_CHANNEL=chromium`. No fantasy API access is involved.
+No automated check authorizes live providers or private browser sessions. Synthetic protocol tests verify private transport without reading a real account. Accessibility automation supplements keyboard checks; it is not assistive-technology certification.
 
-Browser checks exercise filtering, inspection, expansion, week navigation, unsupported features and the mobile menu; fail on page overflow, external requests and console errors; and run axe WCAG A/AA checks on the initial desktop and phone states. Automated checks do not certify every accessibility state. Screenshots and JSON results are written to ignored `output/playwright/`. Screenshots contain synthetic sports data, attributed licensed photographs and official team logos; logo redistribution/commercial permission remains unconfirmed (see ASSETS.md).
+## Data boundaries and limitations
 
-## Structure and contracts
+Certainty (`verified`, `incomplete`, `unknown`, `unsupported`) is separate from provenance. Every demo screen labels its synthetic values. Missing injury reports never mean healthy; roster slots do not establish injury status. Team games never prove appearances. Incomplete and absent coverage never become complete game counts or guaranteed off-days.
 
-- `src/screens/Overview.tsx`: Overview state and composition. `App.tsx` mounts this screen only.
-- `src/components/`: shared shell, panel/button/data-value primitives, keyboard-accessible tabs, day cards, roster table and player inspection.
-- `src/view-model.ts`: immutable presentation contracts and small pure selection/date functions.
-- `src/fixtures/overview.ts`: illustrative 2026–27 fixture week, players and schedules. This directory is intentionally separate from the repository's ignored provider `data/` directories.
-- `src/styles.css`: reference-derived midnight-blue tokens, controlled glow, desktop composition and responsive rules.
-- `scripts/verify-browser.mjs`: repeatable browser checks, screenshot capture and request isolation.
+The local API reuses the Python schedule analysis and Yahoo owned-team reader. Browser GETs read process memory; only the human launcher loads providers. Private tokens never enter browser responses. The browser keeps an opaque capability in memory, removes its bootstrap fragment, uses an authorization header, and clears the private display on disconnect, observed expiry or server failure. No private-to-demo fallback occurs. No private Yahoo IDs enter route URLs.
 
-`Datum<T>` is a discriminated union: `verified` has a supplied value; `incomplete` preserves an observed value plus a reason; `unknown` and `unsupported` have a reason and **no value**. Provenance is a separate contract. “Verified” inside a synthetic fixture means that its authored value is supplied, not that it is real or current sports information. Zero stays zero, an observed zero never becomes a complete total, and missing values never become zero. Numeric rendering is centralized in `DataValue`.
+Yahoo supplies reported roster identity/positions/affiliations only in this browser load. NHL photo identity cannot be inferred from a matching name: unmapped Yahoo identities receive graceful image fallbacks. Real injuries, performance statistics, game logs, forecasts, ownership, line combinations, league scores/standings and live news need additional verified provider contracts. Such values remain unavailable. There are no roster transactions, lineup writes, trades or automated refreshes.
 
-Only the populated fixture week is available. Next/previous week deliberately show unknown coverage and unknown next team games. “Demo week” returns to the populated fixture, rather than pretending the illustrative week is today. Thursday demonstrates partial coverage; the game-log tab explains unsupported data; the Injured filter shows reported designations only; unknown injury status never means healthy. Roster/player actions stay within Overview.
+Display preferences stay in memory. Logos, compact spacing and contrast affect the app; date-range/stat-format/chart/time controls affect an expandable labeled sample preview. Unsupported notifications/themes/projections remain disabled. Closing the app resets preferences.
 
-## Injury and identity boundaries
+## Visual references and assets
 
-`injury: Datum<InjuryDesignation>` is independent of `rosterSlot: Datum<string>`. DTD, Out, IR and IR+ are reported injury designations; an IR/IR+ slot alone never adds someone to Injured. Injured players remain in positional groups, and counts use the full roster independently of search. Unknown/unsupported reports are excluded from reported counts, not treated as healthy.
+The eight approved Dark Arena screenshots control the navy/cyan composition, large player portraits, daily matchup table and generous comparison separation. No screenshot is used as a screen background. The arena is decorative; controls, tables and charts are semantic DOM. Responsive layouts contain wide tables and stack panels.
 
-The six real NHL identities have unknown injury data. Three explicitly fictional demo entries provide DTD, IR+ and Healthy examples without attributing invented medical information to a real person. There are nine rows, with six visible initially and the rest available by scrolling. Empty injury results explain missing reports versus search results.
+`src/media.ts`, `PlayerHeadshot`, `LocalImage` and `TeamMark` preserve the original verified photo/logo registry and loading/missing/error fallbacks. Real, historical licensed photographs replace generated player portraits. IDs and canonical names must agree before a curated photograph is shown. Six real identities and three fictional injury examples demonstrate the synthetic roster.
 
-`src/media.ts` centralizes photo and team identity/source metadata. `PlayerHeadshot` selects by NHL ID and rejects conflicting canonical names. `LocalImage` handles loading, failure and missing assets for photographs and logos. Files are local; no runtime image service or provider integration is added. Image credits expose the photographers, sources, licenses and visual adaptations. See [ASSETS.md](ASSETS.md) for research and licensing limitations.
-
-## Visual source and deliberate differences
-
-The user's approved `screens/01_Overview.png` from `Fantasy_GM_Approved_Dark_Arena_Designs.zip` controls the composition. No screen, card, table or chart is implemented as a screenshot background. The decorative arena is separate from semantic DOM controls. A single PlayerHeadshot component uses authentic, ID-verified historical photographs in roster and inspection views.
-
-The implementation retains the 260px reference sidebar at 1672px width, 78px header, seven day cards, roster/inspection split and panel start at y=418. Smaller layouts collapse navigation and contain horizontal scrolling inside the schedule/table. The inspector stacks below the table rather than squeezing it.
-
-Intentional differences: coherent 2026 fixture dates; a clearly labeled synthetic source; All Players initially selected to match the mixed-position reference rows; accurate fixture group counts; partial/unknown states; an unavailable game log; and a Demo Week reset. Historical Creative Commons photographs replace every generated player portrait, and official NHL dark-background logos replace generic marks. The photo, pose, uniform and original arena differ from the approved screenshot; no pixel-exact imagery claim is made. Official logo redistribution/commercial permission has not been established. See [asset provenance](ASSETS.md) and the [milestone review](../docs/frontend-overview.md).
-
-Future integration must translate domain observations at a narrow boundary and preserve certainty, source, season and time context. Do not import Python/provider transports into this UI, add browser token storage, or wire future screens before review of this milestone.
+[ASSETS.md](ASSETS.md) records creators, exact source pages, licenses and photo treatments. Official NHL logo redistribution/commercial permission remains unresolved. Historical action poses, uniforms and the decorative arena differ from the reference. Unsupported facts are explained rather than drawn as real measurements. Per-milestone comparison notes and production screenshots are in `docs/`.

@@ -1,0 +1,18 @@
+# Dark Arena application milestones
+
+Baseline: merged PR #8, `c0cf4b2`. Screenshots supplied by the owner are the visual source of truth. Existing player IDs, local licensed photographs, logo registry, certainty types and Python provider policies remain authoritative.
+
+Four dependent feature branches / PRs; none will be merged by the implementation agent:
+
+1. **Roster and profile** — shared navigation, full roster with slot-specific bench/reserve sections, inspection-to-profile navigation, player statistics and team schedule context, honest unavailable states, frontend CI. Acceptance: exact identity survives navigation; unknown injuries never become healthy; filters and keyboard navigation work; four viewport captures; existing tests pass.
+2. **Planner and comparison** — daily game table and selected-game panel beneath the week, contextual roster membership, two separated player portraits, selectors/swap and stat comparisons. Acceptance: unknown weeks do not become off-days; team games never imply appearances; distinct player selection; responsive table containment and four viewport captures.
+3. **League, connections, settings** — explicitly synthetic league standings/matchup, genuine disconnected connection state, session-only preferences. Acceptance: no fabricated connection health or private account data; functional demo interactions; unsupported writes disabled/explained; keyboard and responsive checks.
+4. **Local application and release** — minimal same-origin Python server, adapter over existing schedule analysis, strict loopback/request boundaries, read-only routes, release instructions, end-to-end checks and repeatable image comparisons. Acceptance: all eight routes work from a clean checkout; no external browser requests, persistence, request logging or credentials in browser fixtures; malicious origins/hosts/traversal/writes rejected; provider coverage/affiliation caveats retained; all test suites and independent security review completed.
+
+## Data / privacy decision
+
+The existing Yahoo workflow is intentionally human-terminal-only. Serving private Yahoo responses to a browser introduces a new privacy boundary even if the server binds to loopback. Initial API implementation will expose **synthetic inputs only**, reuse pure Python schedule functions, and leave existing OAuth and Yahoo CLI unchanged.
+
+The owner subsequently approved the bounded private browser mode described here. A human starts an interactive terminal session after closing AI/browser automation and recording; tokens and selected roster remain only in that process; the existing read-only Yahoo client supplies bounded GETs; the local browser receives only selected display fields behind a random in-memory capability and same-origin checks; credentials/tokens never enter browser state. No refresh automation, disk cache, browser storage, MCP route, CORS, proxy endpoint or provider bodies in logs. Private mode must never be exercised by agents or browser automation. Implementation and synthetic verification are complete; real-account acceptance remains a private human operation described in `local-application.md`.
+
+No new external service is proposed. Existing PuckAPI credit-spending requests remain an explicit human operation; offline tests inject synthetic snapshots. Provider-backed statistics, news, projections, league standings/scores and player appearance probabilities are unavailable until sources are implemented and verified. Historical photographs and illustrative team affiliations are not current roster assertions. Official team-logo distribution/usage rights remain unresolved; see `frontend/ASSETS.md`.

@@ -1,7 +1,6 @@
-import { Info, X } from 'lucide-react';
+import { Info } from 'lucide-react';
 import { useState } from 'react';
-import { AppShell } from '../components/AppShell';
-import { Button } from '../components/primitives';
+import type { ScreenProps } from '../application';
 import { PlayerInspection } from '../components/PlayerInspection';
 import { RosterTable } from '../components/RosterTable';
 import { WeekSchedule } from '../components/WeekSchedule';
@@ -9,65 +8,83 @@ import { ImageCredits } from '../components/ImageCredits';
 import { daysForWeek, overviewFixture } from '../fixtures/overview';
 import type { PositionGroup } from '../view-model';
 import { filterPlayers, shiftWeek } from '../view-model';
+import { isObservation, scheduleDays } from '../api';
 
-export default function Overview() {
-  const [search, setSearch] = useState('');
+export default function Overview({
+  search,
+  players,
+  onNavigate,
+  onNotice: setNotice,
+  local,
+}: ScreenProps) {
+  const observed = isObservation(local?.view);
+  const loadedStart = observed
+    ? (local?.view?.schedule?.start ?? new Date().toISOString().slice(0, 10))
+    : overviewFixture.weekStart;
   const [group, setGroup] = useState<PositionGroup>('all');
-  const [selectedId, setSelectedId] = useState<string | undefined>('makar');
-  const [start, setStart] = useState(overviewFixture.weekStart);
-  const [selectedDay, setSelectedDay] = useState(overviewFixture.weekStart);
-  const [notice, setNotice] = useState('');
+  const [selectedId, setSelectedId] = useState<string | undefined>(players[0]?.id);
+  const [start, setStart] = useState(loadedStart);
+  const [selectedDay, setSelectedDay] = useState(loadedStart);
   const [showNotes, setShowNotes] = useState(false);
   const [showCredits, setShowCredits] = useState(false);
-  const selectedPlayer = overviewFixture.players.find((player) => player.id === selectedId);
-  const filtered = filterPlayers(overviewFixture.players, search, group);
-  const referenceWeek = start === overviewFixture.weekStart;
+  const selectedPlayer = players.find((player) => player.id === selectedId);
+  const filtered = filterPlayers(players, search, group);
+  const referenceWeek = !observed && start === overviewFixture.weekStart;
   function moveWeek(direction: number) {
     const next = shiftWeek(start, direction);
     setStart(next);
     setSelectedDay(next);
   }
   function resetWeek() {
-    setStart(overviewFixture.weekStart);
-    setSelectedDay(overviewFixture.weekStart);
+    setStart(loadedStart);
+    setSelectedDay(loadedStart);
   }
   return (
-    <AppShell search={search} onSearch={setSearch} onNotice={setNotice}>
+    <>
       <WeekSchedule
-        days={daysForWeek(start)}
+        days={observed ? scheduleDays(start, local?.view) : daysForWeek(start)}
         start={start}
         selectedDay={selectedDay}
         onSelectDay={setSelectedDay}
         onMove={moveWeek}
         onReset={resetWeek}
         isReference={referenceWeek}
+        isObservation={observed}
       />
       <div className={`roster-layout ${selectedPlayer ? '' : 'inspection-closed'}`}>
         <RosterTable
           players={filtered}
-          allPlayers={overviewFixture.players}
+          allPlayers={players}
           group={group}
           onGroup={setGroup}
           selectedId={selectedId}
           onSelect={setSelectedId}
           onNotice={setNotice}
+          isDemo={!observed}
           referenceWeek={referenceWeek}
+          onCompare={() => onNavigate('comparison', selectedId)}
         />
         {selectedPlayer && (
           <PlayerInspection
             key={selectedPlayer.id}
             player={selectedPlayer}
             onClose={() => setSelectedId(undefined)}
+            isDemo={!observed}
             referenceWeek={referenceWeek}
+            onProfile={() => onNavigate('profile', selectedPlayer.id)}
           />
         )}
       </div>
       <footer className="demo-footer">
         <span>
           <span className="demo-indicator" />
-          SOURCE: SYNTHETIC FIXTURES
+          {observed ? 'SOURCE: LOCAL PROVIDER OBSERVATION' : 'SOURCE: SYNTHETIC FIXTURES'}
         </span>
-        <p>No live connection. Synthetic statistics; historical licensed photos.</p>
+        <p>
+          {observed
+            ? 'Read-only observation; roster coverage, injuries, performance and appearances unverified.'
+            : 'No live connection. Synthetic statistics; historical licensed photos.'}
+        </p>
         <button onClick={() => setShowCredits(!showCredits)} aria-expanded={showCredits}>
           Image credits
         </button>
@@ -76,7 +93,19 @@ export default function Overview() {
         </button>
       </footer>
       {showCredits && <ImageCredits />}
-      {showNotes && (
+      {showNotes && observed && (
+        <section className="panel data-notes" aria-label="Data certainty notes">
+          <h2>Local observations</h2>
+          {local?.view?.provenance.map((note, i) => (
+            <p key={i}>{note}</p>
+          ))}
+          <p>
+            Yahoo IDs are not NHL IDs. No approximate name match, current injury, statistical
+            forecast, roster completeness or appearance is inferred.
+          </p>
+        </section>
+      )}
+      {showNotes && !observed && (
         <section className="panel data-notes" aria-label="Data certainty notes">
           <h2>Clear about what we know</h2>
           <p>
@@ -107,21 +136,6 @@ export default function Overview() {
           </dl>
         </section>
       )}
-      <div className={`notice ${notice ? 'visible' : ''}`} role="status" aria-live="polite">
-        {notice && (
-          <>
-            <Info size={18} />
-            <span>{notice}</span>
-            <Button
-              className="icon-button"
-              aria-label="Dismiss notice"
-              onClick={() => setNotice('')}
-            >
-              <X size={18} />
-            </Button>
-          </>
-        )}
-      </div>
-    </AppShell>
+    </>
   );
 }

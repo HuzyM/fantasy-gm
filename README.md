@@ -1,5 +1,18 @@
 # Fantasy GM
 
+## Dark Arena local application
+
+The eight-screen React application and minimal same-origin Python API are ready
+for local synthetic use. Follow [local application instructions](docs/local-application.md)
+and the [frontend guide](frontend/README.md). Default startup uses no credentials
+and makes no provider requests. An optional, explicitly confirmed human-only
+browser session reuses the existing read-only Yahoo client; private display data
+and the browser capability remain in memory. AI/MCP access remains disabled, and
+no roster transactions, lineup writes or automated trades are implemented.
+
+Provider-backed performance, injury reports, projections, game logs and league
+scores remain unavailable. Human-operated live acceptance is still required.
+
 Fantasy GM is a fantasy sports analytics and management platform designed to connect real fantasy league data with schedule, player, matchup, and roster intelligence. The initial integration targets Yahoo Fantasy Hockey.
 
 **Status: FGM-004 supported read-only workflow accepted.** Yahoo Public Client
