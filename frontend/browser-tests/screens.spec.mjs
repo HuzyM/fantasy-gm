@@ -133,8 +133,20 @@ for (const route of routes)
         await page.getByRole('switch', { name: 'Compact view', exact: true }).click();
         await expect(page.locator('.app-shell')).toHaveClass(/compact-display/);
         const nav = page.getByRole('navigation', { name: 'Settings sections' });
+        if (width > 1050) {
+          const navBounds = await nav.boundingBox();
+          const cardsBounds = await page.locator('.settings-center-bottom').boundingBox();
+          expect(navBounds).not.toBeNull();
+          expect(cardsBounds).not.toBeNull();
+          expect(cardsBounds.x).toBeGreaterThanOrEqual(navBounds.x + navBounds.width);
+        }
         await nav.getByRole('button', { name: /Notifications/ }).click();
         await expect(page).toHaveURL(/#settings$/);
+        for (const label of ['Account', 'About']) {
+          const section = nav.getByRole('button', { name: new RegExp(`^${label}`) });
+          await section.click();
+          await expect(section).toHaveAttribute('aria-pressed', 'true');
+        }
       }
       expect(external).toEqual([]);
       expect(errors).toEqual([]);
