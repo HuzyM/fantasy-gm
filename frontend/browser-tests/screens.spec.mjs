@@ -85,12 +85,13 @@ for (const route of routes)
             ...(advisory ? { timeout: 2000 } : {}),
           });
         } catch (error) {
-          if (!advisory) throw error;
           result.status = 'mismatch';
           result.detail = String(error.message).slice(0, 2000);
+          if (!advisory) throw error;
           testInfo.annotations.push({ type: 'visual-advisory', description: imageName });
+        } finally {
+          await writeFile(`output/visual/${imageName}.json`, JSON.stringify(result));
         }
-        await writeFile(`output/visual/${imageName}.json`, JSON.stringify(result));
       }
       await page.addScriptTag({ url: '/axe-check.js' });
       const violations = await page.evaluate(async () =>

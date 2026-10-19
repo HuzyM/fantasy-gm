@@ -12,7 +12,7 @@ credentials. No environment secrets or provider configuration is supplied.
 | Exact check name | What it executes |
 | --- | --- |
 | `Python Linux` | Python 3.12, locked uv environment, complete offline pytest suite, Ruff lint and `ruff format --check` |
-| `Python Windows and browser` | Native Windows Python 3.12 pytest suite including Windows input tests, native strict mypy, production build/TypeScript and the existing complete synthetic-API browser suite |
+| `Python Windows and browser` | Native Windows Python 3.12 pytest suite including Windows input tests, native strict mypy, production build/TypeScript, the existing complete synthetic-API browser suite and 32 blocking Windows screenshot comparisons |
 | `Frontend and local API` | Node 22.15.0, locked npm install, frontend formatting/unit tests, production build/TypeScript through Playwright's existing server command, all synthetic-API browser cases and the retained Overview interaction regression |
 
 Python is not merely type-checked for Windows on Linux: Windows executes the
@@ -43,29 +43,38 @@ private profiles, storage files, tokens, traces of real sessions or environment
 dumps are uploaded. The metadata allowlist contains OS/image, Node, browser,
 Playwright and bundled font versions only.
 
-## Visual comparisons: investigate before blocking
+## Qualified Windows visual comparisons
 
 The approved `docs/frontend/win32` images were generated locally with a system
 Chrome whose exact baseline environment was not recorded. A shared `win32` label
 alone does not establish equivalent browser, OS renderer or fonts. Playwright
 [documents these environment dependencies](https://playwright.dev/docs/test-snapshots).
 
-The Windows job uses `windows-2025`, bundled versioned fonts, pinned Playwright
-Chromium and `VISUAL_COMPARE=advisory` to compare all 32 existing images in the
-same run as the blocking functional checks. Only the screenshot assertion is
-advisory: failed asset, interaction, layout, page-error, API or accessibility
-assertions still fail the job. Each visual comparison records matched/mismatch
-JSON and preserves available actual/expected/diff evidence. Summary counts expect
-32 comparisons. CI never updates or creates baselines. Existing local
-`VISUAL_COMPARE=1` remains blocking.
+Two independent hosted Windows executions of `aeb21d2` in
+[run 39298580835](https://github.com/HuzyM/fantasy-gm/actions/runs/39298580835)
+each passed all 38 browser cases and matched all 32 existing baselines at the
+unchanged `maxDiffPixelRatio: 0.005`. Their metadata was identical:
+`windows-2025` image `20261007.264.1`, OS `10.0.26100`, Node `22.15.0`,
+Playwright `1.64.1`, Chromium `156.0.8078.4`, bundled Barlow/Barlow Condensed
+`5.3.0`. Thirty captures were byte-identical. The comparison laptop/tablet
+portraits differed by at most 8/255 per colour channel; all 32 pairs had **zero
+perceptually different pixels** under the locked Playwright comparator with
+`maxDiffPixels: 0` and its unchanged default colour threshold. This qualifies
+repeatable CI output compatible with the approved baselines; it does not recover
+the unknown historical Chrome environment. No baseline image changed.
 
-Promotion requires inspection of actual CI artifacts against the approved designs,
-an explicitly recorded equivalent baseline environment and repeated identical-head
-Windows runs demonstrating stable captures. Do not silently replace local approved
-images or relax the difference tolerance just to get green CI. If CI output differs
-from the historical environment, retain the advisory results until reviewed CI
-baselines and a maintenance policy are approved. Hosted OS images still update
-within the named release; environment metadata makes that drift visible.
+The Windows job therefore uses `VISUAL_COMPARE=1`: screenshot failures now block
+alongside asset, interaction, layout, page-error, API and accessibility failures.
+Each attempted visual comparison records matched/mismatch JSON before a blocking
+error propagates and preserves available actual/expected/diff evidence. Summary
+counts expect 32 comparisons. CI never updates or creates baselines. The optional
+`VISUAL_COMPARE=advisory` investigation mode catches screenshot errors only.
+
+Hosted OS images still update within the named release. When the image, browser,
+fonts or capture output changes, inspect artifact differences and repeat captures
+in the new recorded environment. Do not automatically replace approved images or
+relax the tolerance to make CI pass. Rendering drift requires review of the
+environment or any proposed baseline update; retain the failing evidence.
 
 ## Advisory dependency audits
 
@@ -80,6 +89,13 @@ scan is not a guarantee against unknown vulnerabilities or malicious packages.
 These scanners send public dependency names/versions to public advisory services,
 not provider/account data. No extra application dependency is introduced.
 
+The first hosted scans reported zero known vulnerabilities: 42 Linux Python
+packages and npm's locked tree. The Python export preserves environment markers,
+so Linux does not scan Windows-only `colorama`/`pywin32` or the unsupported
+Emscripten-only `httpx2-jsfetch`. This is a remaining audit coverage limitation,
+not evidence that those packages have been checked. Dependency metadata may
+change independently of this commit; use the latest run's reports.
+
 ## Owner action: protect main
 
 The audit found main unprotected and no active repository/parent rulesets. This
@@ -89,8 +105,9 @@ Settings → Rules/Rulesets (or branch protection), require a pull request and t
 three exact check names above, selecting GitHub Actions as their source. Require
 the branch to be up to date or use a merge queue; `merge_group` is supported.
 Configure any administrator/bypass policy explicitly, and block force pushes and
-branch deletion. Advisory dependency/visual outcomes should not be selected as
-separate required gates before triage/stability approval.
+branch deletion. Advisory dependency outcomes should not be selected as separate
+required gates before triage. Windows visual comparisons are part of the required
+`Python Windows and browser` job.
 
 The former single `frontend` context should not remain the required context after
 migration: the meaningful gates are the three named jobs. Main protection cannot

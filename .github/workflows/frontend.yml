@@ -117,8 +117,8 @@ jobs:
     env:
       PLAYWRIGHT_CHANNEL: chromium
       LOCAL_API: "1"
-      # Original local Chrome baseline environment was not recorded. Functional assertions still block.
-      VISUAL_COMPARE: advisory
+      # Qualified with repeated hosted runs against unchanged Windows baselines; see docs/ci-quality-gates.md.
+      VISUAL_COMPARE: "1"
     steps:
       - uses: actions/checkout@v4
         with:
@@ -145,7 +145,7 @@ jobs:
         working-directory: frontend
       - run: npx playwright install chromium
         working-directory: frontend
-      - name: Production synthetic API browser tests and advisory visual comparisons
+      - name: Production synthetic API browser tests and blocking visual comparisons
         run: npx playwright test
         working-directory: frontend
       - name: Visual comparison summary
@@ -157,8 +157,8 @@ jobs:
           records = [json.loads(p.read_text()) for p in Path('frontend/output/visual').glob('*.json')]
           matches = sum(r['status'] == 'matched' for r in records)
           with open(os.environ['GITHUB_STEP_SUMMARY'], 'a', encoding='utf-8') as summary:
-              summary.write(f'### Windows visual investigation (advisory)\n{matches}/{len(records)} screenshots matched existing local baselines; expected 32 comparisons.\n')
-              summary.write('Functional browser/accessibility/API assertions remain blocking. See windows-evidence for environment, screenshots, differences and result JSON.\n')
+              summary.write(f'### Windows visual regression gate\n{matches}/{len(records)} screenshots matched existing local baselines; expected 32 comparisons.\n')
+              summary.write('Visual, functional, accessibility and API assertions are blocking. See windows-evidence for environment, screenshots, differences and result JSON.\n')
           PY
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
