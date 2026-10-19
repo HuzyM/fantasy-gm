@@ -65,6 +65,8 @@ for (const width of [1672, 390])
     ).toBeVisible();
     expect(await page.locator('.profile-portrait img').count()).toBe(0);
     expect(await page.locator('.performance-column').count()).toBe(0);
+    await expect(page.getByText('No statistics supplied for this reported player.')).toBeVisible();
+    await expect(page.getByText(/fictional player/)).toHaveCount(0);
     expect(
       await page.evaluate(() => ({
         local: localStorage.length,

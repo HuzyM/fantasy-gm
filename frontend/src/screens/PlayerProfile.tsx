@@ -102,7 +102,11 @@ export default function PlayerProfile({
               </div>
             ))
           ) : (
-            <p>No statistics supplied for this fictional player.</p>
+            <p>
+              {observed
+                ? 'No statistics supplied for this reported player.'
+                : 'No statistics supplied for this fictional player.'}
+            </p>
           )}
         </div>
       </section>

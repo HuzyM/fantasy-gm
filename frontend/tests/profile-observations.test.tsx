@@ -61,4 +61,6 @@ it('renders the observed October date instead of the demo fixture month', () => 
   );
   expect(screen.getByText('Oct 19')).toBeVisible();
   expect(screen.queryByText('Dec 19')).not.toBeInTheDocument();
+  expect(screen.getByText('No statistics supplied for this reported player.')).toBeVisible();
+  expect(screen.queryByText(/fictional player/)).not.toBeInTheDocument();
 });
