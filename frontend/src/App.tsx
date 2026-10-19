@@ -92,7 +92,9 @@ export default function App() {
       setSearch('');
       setNotice('');
       setRoute({ screen: 'overview' });
-      window.history.replaceState(null, '', '#overview');
+      // A fresh launcher fragment must reach the session handler before route cleanup.
+      if (!window.location.hash.startsWith('#access='))
+        window.history.replaceState(null, '', '#overview');
     }
   }, [local.state]);
   const props = {
