@@ -86,3 +86,23 @@ for (const width of [1672, 390])
     expect(external).toEqual([]);
     expect(errors).toEqual([]);
   });
+
+test('synthetic server rotation rejects the old browser capability', async ({ page }) => {
+  await page.route('**/api/status', (r) =>
+    r.fulfill({ json: { mode: 'private', yahoo: 'loaded', schedule: 'unavailable' } }),
+  );
+  await page.route('**/api/view', (r) => r.fulfill({ json: view }));
+  await page.goto('/#access=synthetic-protocol-capability-12345678901234567890');
+  await expect(
+    page.getByRole('button', { name: 'Inspect Synthetic Protocol Player', exact: true }),
+  ).toBeVisible();
+  await page.route('**/api/view', (r) =>
+    r.fulfill({ status: 401, json: { error: 'Session unavailable' } }),
+  );
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+  await expect(
+    page.getByRole('heading', { name: 'Private session unavailable', exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText('Synthetic Protocol Player', { exact: true })).toHaveCount(0);
+  await expect(page.getByText('Cale Makar', { exact: true })).toHaveCount(0);
+});

@@ -58,7 +58,9 @@ export function useLocalSession(): LocalSession {
           if (!controller.signal.aborted) clear();
           return;
         }
-        if (loaded) return;
+        // A restarted private server can report loaded while rejecting this old capability.
+        // Authenticate each private check against the in-memory view; no provider is invoked.
+        if (loaded && !isPrivate) return;
         const requestCapability = capability.current;
         const data = await fetch('/api/view', {
           ...options,

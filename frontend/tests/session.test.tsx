@@ -111,6 +111,34 @@ describe('synthetic tests of private transport boundaries', () => {
     expect(screen.getByRole('heading', { name: 'Private session unavailable' })).toBeVisible();
     expect(screen.queryByText('Synthetic Private Player')).not.toBeInTheDocument();
   });
+  it('clears the prior private display when a restarted server rejects its capability despite loaded status', async () => {
+    const fetcher = vi.fn().mockImplementation((url: string) =>
+      Promise.resolve({
+        ok: true,
+        json: async () =>
+          url.endsWith('/status')
+            ? { mode: 'private', yahoo: 'loaded', schedule: 'unavailable' }
+            : privateResponse,
+      }),
+    );
+    vi.stubGlobal('fetch', fetcher);
+    render(<App />);
+    await screen.findByRole('button', { name: /^Inspect Synthetic Private Player$/ });
+    fetcher.mockImplementation((url: string) =>
+      Promise.resolve(
+        url.endsWith('/status')
+          ? {
+              ok: true,
+              json: async () => ({ mode: 'private', yahoo: 'loaded', schedule: 'unavailable' }),
+            }
+          : { ok: false, status: 401, json: async () => ({ error: 'Session unavailable' }) },
+      ),
+    );
+    fireEvent.focus(window);
+    await screen.findByRole('heading', { name: 'Private session unavailable' });
+    expect(screen.queryByText('Synthetic Private Player')).not.toBeInTheDocument();
+    expect(screen.queryByText('Cale Makar')).not.toBeInTheDocument();
+  });
   it('fails closed when the private session is unavailable; it never substitutes the demo', async () => {
     vi.stubGlobal(
       'fetch',

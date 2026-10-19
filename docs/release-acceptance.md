@@ -21,13 +21,13 @@ milestones. The final branch contains the complete runnable application.
 ## Local verification
 
 - 802 Python tests, including 19 new API/date/security cases; Ruff and strict mypy pass.
-- 53 frontend tests, including transport tests with wholly synthetic private-protocol inputs.
+- 54 frontend tests, including transport tests with wholly synthetic private-protocol inputs.
 - Frontend formatting, types and production build pass. Production JavaScript is approximately 100 kB gzip; no new frontend runtime dependency was added.
-- A clean Git source export with a fresh locked dependency install reproduces formatting, types, all 53 frontend tests and the production build. The lockfile verifies offline. Linux CI runs Python regressions with the 26 existing Windows-only input tests skipped, and checks types against the Windows target used by the guarded terminal APIs.
+- A clean Git source export with a fresh locked dependency install reproduces formatting, types, all 54 frontend tests and the production build. The lockfile verifies offline. Linux CI runs Python regressions with the 26 existing Windows-only input tests skipped, and checks types against the Windows target used by the guarded terminal APIs.
 - All eight screens pass 32 production browser cases against the default synthetic Python server at 1672×941, 1440×900, 768×1024 and 390×844. Tests check overflow, loaded local assets, keyboard/control interactions, no external browser requests, no page errors and automated axe WCAG A/AA rules.
-- Two additional desktop/mobile browser cases exercise private bootstrap, authorization headers, exact identity/fallbacks, private-ID-free URLs, absence of browser storage/cookies and disconnect using synthetic protocol inputs only.
+- Three additional browser cases (desktop/mobile transport and restart rotation) exercise private bootstrap, authorization headers, exact identity/fallbacks, private-ID-free URLs, absence of browser storage/cookies and disconnect using synthetic protocol inputs only.
 - The retained Overview browser interaction regression remains part of CI. Same-platform screenshot assertions use reviewed Windows baselines under `docs/frontend/win32`; Linux CI captures evidence independently of Windows font rasterization.
-- Backend boundary review completed independently with no actionable findings. Final frontend transport/integration review is recorded separately before release handoff. Automated checks do not certify assistive technology or live provider correctness.
+- Backend boundary review completed independently with no actionable findings. Final integration review identified a P1 stale-session gap on server restart. Private checks now authenticate the capability against the local in-memory view on every poll/focus; unit and browser regressions reject old capabilities and clear the display. Independent verification of that fix is required before handoff. Automated checks do not certify assistive technology or live provider correctness.
 
 ## Intentional visual differences
 
