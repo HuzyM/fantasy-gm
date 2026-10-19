@@ -11,7 +11,10 @@ export default defineConfig({
     channel: process.env.PLAYWRIGHT_CHANNEL || 'chrome',
   },
   webServer: {
-    command: 'npm run build && npm run preview -- --port 4173 --strictPort',
+    command:
+      process.env.LOCAL_API === '1'
+        ? `npm run build && "${process.env.PYTHON_EXECUTABLE || (process.platform === 'win32' ? '../.venv/Scripts/python.exe' : '../.venv/bin/python')}" -B -m fantasy_gm.web --port 4173`
+        : 'npm run build && npm run preview -- --port 4173 --strictPort',
     url: 'http://127.0.0.1:4173',
     reuseExistingServer: false,
   },

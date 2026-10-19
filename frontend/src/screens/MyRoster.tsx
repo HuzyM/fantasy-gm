@@ -1,3 +1,4 @@
+import { isObservation } from '../api';
 import { useState } from 'react';
 import type { ScreenProps } from '../application';
 import type { PositionGroup, Player } from '../view-model';
@@ -60,9 +61,10 @@ function SlotSection({
     </section>
   );
 }
-export default function MyRoster({ search, players, onNavigate, onNotice }: ScreenProps) {
+export default function MyRoster({ search, players, onNavigate, onNotice, local }: ScreenProps) {
+  const observed = isObservation(local?.view);
   const [group, setGroup] = useState<PositionGroup>('all');
-  const [selected, setSelected] = useState<string | undefined>('makar');
+  const [selected, setSelected] = useState<string | undefined>(players[0]?.id);
   const player = players.find((p) => p.id === selected);
   const slot = (p: Player) =>
     p.rosterSlot.state === 'verified' || p.rosterSlot.state === 'incomplete'
@@ -74,10 +76,14 @@ export default function MyRoster({ search, players, onNavigate, onNotice }: Scre
         title="My Roster"
         description="Inspect your players, statistics and reported roster slots."
       >
-        <span className="button">Week 14 · demo period</span>
+        <span className="button">
+          {observed ? 'Reported roster · coverage unverified' : 'Week 14 · demo period'}
+        </span>
       </ScreenHeading>
       <p className="source-banner">
-        Synthetic roster and statistics · real-player injury reports unknown · read-only
+        {observed
+          ? 'Reported local roster · total, effective coverage, injuries and performance unknown · read-only'
+          : 'Synthetic roster and statistics · real-player injury reports unknown · read-only'}
       </p>
       <div className={`roster-layout ${player ? '' : 'inspection-closed'}`}>
         <div className="roster-main">
@@ -104,7 +110,8 @@ export default function MyRoster({ search, players, onNavigate, onNotice }: Scre
             selectedId={selected}
             onSelect={setSelected}
             onNotice={onNotice}
-            referenceWeek
+            isDemo={!observed}
+            referenceWeek={!observed}
             detailed
             onCompare={() => onNavigate('comparison', selected)}
           />
@@ -131,7 +138,8 @@ export default function MyRoster({ search, players, onNavigate, onNotice }: Scre
               key={player.id}
               player={player}
               onClose={() => setSelected(undefined)}
-              referenceWeek
+              isDemo={!observed}
+              referenceWeek={!observed}
               onProfile={() => onNavigate('profile', player.id)}
             />
             <Panel className="read-only-actions">

@@ -1,3 +1,4 @@
+import { isObservation } from '../api';
 import { useState, useEffect } from 'react';
 import {
   Bell,
@@ -45,12 +46,14 @@ function Toggle({
 export default function Settings({
   onNavigate,
   onNotice,
+  local,
   display,
   onDisplayChange,
 }: ScreenProps & {
   display?: DisplayPreferences;
   onDisplayChange?: (value: DisplayPreferences) => void;
 }) {
+  const observed = isObservation(local?.view);
   const [defaultView, setDefaultView] = useState<Screen>('overview');
   const [range, setRange] = useState('season');
   const [logos, setLogos] = useState(display?.logos ?? true);
@@ -255,38 +258,42 @@ export default function Settings({
                 <h2>League &amp; Scoring</h2>
               </div>
               <p className="settings-section-note">Read-only synthetic scoring sample.</p>
-              <dl className="settings-list">
-                <div>
-                  <dt>League</dt>
-                  <dd>Riverside Hockey League</dd>
-                </div>
-                <div>
-                  <dt>Scoring type</dt>
-                  <dd>Head-to-Head Points</dd>
-                </div>
-                <div>
-                  <dt>Goals / assists</dt>
-                  <dd>3 / 2 points</dd>
-                </div>
-                <div>
-                  <dt>Shots / blocks</dt>
-                  <dd>0.5 / 0.5 points</dd>
-                </div>
-                <div>
-                  <dt>Goalie win / shutout</dt>
-                  <dd>4 / 3 points</dd>
-                </div>
-                <div>
-                  <dt>Waiver type</dt>
-                  <dd>Weekly (FAAB)</dd>
-                </div>
-                <div>
-                  <dt>Playoffs</dt>
-                  <dd>Weeks 22–24 · Top 6</dd>
-                </div>
-              </dl>
+              {observed ? (
+                <p>Scoring rules are unavailable in this bounded browser session.</p>
+              ) : (
+                <dl className="settings-list">
+                  <div>
+                    <dt>League</dt>
+                    <dd>Riverside Hockey League</dd>
+                  </div>
+                  <div>
+                    <dt>Scoring type</dt>
+                    <dd>Head-to-Head Points</dd>
+                  </div>
+                  <div>
+                    <dt>Goals / assists</dt>
+                    <dd>3 / 2 points</dd>
+                  </div>
+                  <div>
+                    <dt>Shots / blocks</dt>
+                    <dd>0.5 / 0.5 points</dd>
+                  </div>
+                  <div>
+                    <dt>Goalie win / shutout</dt>
+                    <dd>4 / 3 points</dd>
+                  </div>
+                  <div>
+                    <dt>Waiver type</dt>
+                    <dd>Weekly (FAAB)</dd>
+                  </div>
+                  <div>
+                    <dt>Playoffs</dt>
+                    <dd>Weeks 22–24 · Top 6</dd>
+                  </div>
+                </dl>
+              )}
               <Button onClick={() => onNavigate('league')}>
-                View demo league <Trophy size={16} />
+                {observed ? 'View league' : 'View demo league'} <Trophy size={16} />
               </Button>
             </Panel>
           </div>
@@ -373,15 +380,25 @@ export default function Settings({
             <div className="settings-account-detail">
               <UserRound />
               <div>
-                <b>Not signed in</b>
+                <b>
+                  {local?.view?.mode === 'private'
+                    ? 'Account details not fetched'
+                    : 'Not signed in'}
+                </b>
                 <small>No account details loaded</small>
               </div>
             </div>
             <div className="settings-account-detail">
               <LockKeyhole />
               <div>
-                <b>Yahoo disconnected</b>
-                <small>No verified provider connection</small>
+                <b>
+                  {observed
+                    ? local?.view?.mode === 'private'
+                      ? 'Private observation loaded'
+                      : 'Yahoo disconnected'
+                    : 'Yahoo disconnected'}
+                </b>
+                <small>Ongoing connection health is not verified</small>
               </div>
             </div>
             <Button className="primary" onClick={() => onNavigate('connections')}>
@@ -395,8 +412,9 @@ export default function Settings({
               <h2>Data &amp; Sync</h2>
             </div>
             <p className="settings-section-note">
-              Demo fixtures only. Provider sync is unavailable until the local API privacy boundary
-              is approved. Account connection remains human-operated through the CLI.
+              Provider loads require the human-operated local launcher. No browser credentials,
+              automated provider refresh or persistent private data. Use Connections for loaded
+              source details.
             </p>
             <Button onClick={() => onNavigate('connections')}>View connection details</Button>
           </Panel>

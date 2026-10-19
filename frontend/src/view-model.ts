@@ -16,6 +16,7 @@ export interface Game {
   readonly away: string;
   readonly home: string;
   readonly time: string;
+  readonly state?: string;
 }
 export interface DaySchedule {
   readonly date: string;
@@ -25,11 +26,13 @@ export interface DaySchedule {
 export interface Player {
   readonly id: string;
   readonly name: string;
-  readonly number: number;
+  readonly number?: number;
   readonly team: string;
   readonly position: string;
-  readonly group: Exclude<PositionGroup, 'all' | 'injured'>;
+  readonly group: Exclude<PositionGroup, 'all' | 'injured'> | 'unknown';
   readonly nhlId?: number;
+  readonly identitySource?: 'yahoo';
+  readonly scheduleJoin?: 'matched' | 'unverified';
   readonly rosterSlot: Datum<string>;
   readonly nextGame: string;
   readonly weeklyPoints: Datum<number>;

@@ -1,3 +1,4 @@
+import { isObservation } from '../api';
 import { useState } from 'react';
 import type { ScreenProps } from '../application';
 import { Button, DataValue, Panel, TeamMark } from '../components/primitives';
@@ -10,8 +11,11 @@ const statTabs = ['Season Stats', 'Game Log', 'Advanced Stats', 'Splits'] as con
 export default function PlayerProfile({
   players,
   selectedId,
+  local,
   onNavigate,
 }: ScreenProps & { selectedId?: string }) {
+  const observed = isObservation(local?.view);
+  const days = observed ? (local?.view?.schedule?.days ?? []) : overviewFixture.days;
   const player = players.find((p) => p.id === selectedId);
   const [tab, setTab] = useState<(typeof statTabs)[number]>('Season Stats');
   const [period, setPeriod] = useState('10');
@@ -24,21 +28,26 @@ export default function PlayerProfile({
       </section>
     );
   const photo = getPlayerPhoto(player.nhlId, player.name);
-  const games = overviewFixture.days.flatMap((day) =>
-    day.games
-      .filter((game) => game.away === player.team || game.home === player.team)
-      .map((game) => ({ ...game, date: day.date })),
-  );
-  const performance = [18.2, 22.1, 16.8, 24.5, 12.3, 20.7, 19.1, 15.8, 28.4, 18.6].slice(
-    -Number(period),
-  );
+  const games =
+    player.scheduleJoin === 'unverified'
+      ? []
+      : days.flatMap((day) =>
+          day.games
+            .filter((game) => game.away === player.team || game.home === player.team)
+            .map((game) => ({ ...game, date: day.date })),
+        );
+  const performance = observed
+    ? []
+    : [18.2, 22.1, 16.8, 24.5, 12.3, 20.7, 19.1, 15.8, 28.4, 18.6].slice(-Number(period));
   return (
     <div className="profile-page">
       <Button className="profile-back" onClick={() => onNavigate('roster')}>
         Back to My Roster
       </Button>
       <p className="source-banner">
-        Synthetic performance and schedule examples · historical licensed photograph
+        {observed
+          ? 'Reported Yahoo identity · NHL photo crosswalk, performance, injuries and coverage unverified'
+          : 'Synthetic performance and schedule examples · historical licensed photograph'}
       </p>
       <section className="panel profile-hero" aria-label="Player identity">
         <div className="profile-portrait">
@@ -52,11 +61,17 @@ export default function PlayerProfile({
         <div className="profile-identity">
           <h1>{player.name}</h1>
           <p>
-            #{player.number} &nbsp; | &nbsp; {player.position} &nbsp; | &nbsp;{' '}
-            {teamAssets[player.team]?.name ?? 'Fictional demo club'}
+            {player.number === undefined ? 'Number unknown' : `#${player.number}`} &nbsp; | &nbsp;{' '}
+            {player.position} &nbsp; | &nbsp;{' '}
+            {teamAssets[player.team]?.name ??
+              (player.identitySource === 'yahoo' ? 'Team unknown' : 'Fictional demo club')}
           </p>
           <p className="muted">
-            {player.nhlId ? `NHL player ID: ${player.nhlId}` : 'Fictional demo identity'}
+            {player.nhlId
+              ? `NHL player ID: ${player.nhlId}`
+              : player.identitySource === 'yahoo'
+                ? 'Yahoo identity · NHL match unverified'
+                : 'Fictional demo identity'}
           </p>
           <div className="profile-status">
             <span>
@@ -66,7 +81,11 @@ export default function PlayerProfile({
               Injury: <DataValue datum={player.injury} />
             </span>
           </div>
-          <p className="muted">Team affiliation shown in the synthetic roster is illustrative.</p>
+          <p className="muted">
+            {observed
+              ? 'Reported affiliation does not establish current team or appearance.'
+              : 'Team affiliation shown in the synthetic roster is illustrative.'}
+          </p>
         </div>
         <div className="profile-club">
           <TeamMark code={player.team} large />
@@ -93,17 +112,29 @@ export default function PlayerProfile({
               <h2>Recent Performance</h2>
               <label>
                 Demo games{' '}
-                <select value={period} onChange={(e) => setPeriod(e.target.value)}>
+                <select
+                  disabled={observed}
+                  value={period}
+                  onChange={(e) => setPeriod(e.target.value)}
+                >
                   <option value="10">Last 10</option>
                   <option value="5">Last 5</option>
                 </select>
               </label>
             </div>
-            <p className="muted">Illustrative series only; no real game results.</p>
+            <p className="muted">
+              {observed
+                ? 'Performance unavailable. No game-log provider is connected.'
+                : 'Illustrative series only; no real game results.'}
+            </p>
             <div
               className="performance-chart"
               role="img"
-              aria-label={`Synthetic fantasy points: ${performance.join(', ')}`}
+              aria-label={
+                observed
+                  ? 'Performance unavailable'
+                  : `Synthetic fantasy points: ${performance.join(', ')}`
+              }
             >
               {performance.map((value, i) => (
                 <div className="performance-column" key={i}>
@@ -135,7 +166,9 @@ export default function PlayerProfile({
             >
               {tab === 'Season Stats' ? (
                 <table>
-                  <caption>Synthetic season totals</caption>
+                  <caption>
+                    {observed ? 'Performance statistics unavailable' : 'Synthetic season totals'}
+                  </caption>
                   <thead>
                     <tr>
                       <th>Category</th>
@@ -193,26 +226,37 @@ export default function PlayerProfile({
           <Panel className="profile-impact">
             <h2>Schedule Impact</h2>
             <div className="impact-days">
-              {overviewFixture.days.map((day) => (
+              {days.map((day) => (
                 <div key={day.date}>
                   <span>{day.date.slice(-2)}</span>
                   <span
                     role="img"
                     className={
+                      player.scheduleJoin !== 'unverified' &&
                       day.games.some((g) => g.home === player.team || g.away === player.team)
                         ? 'observed-dot'
                         : 'unknown-dot'
                     }
                     aria-label={
+                      player.scheduleJoin !== 'unverified' &&
                       day.games.some((g) => g.home === player.team || g.away === player.team)
-                        ? 'Synthetic team game'
-                        : 'No game in fixture'
+                        ? observed
+                          ? 'Observed team game; appearance unconfirmed'
+                          : 'Synthetic team game'
+                        : observed
+                          ? 'Schedule or affiliation unknown'
+                          : 'No game in fixture'
                     }
                   />
                 </div>
               ))}
             </div>
-            <p>Player appearances are unconfirmed. Thursday has incomplete fixture coverage.</p>
+            <p>
+              Player appearances are unconfirmed.{' '}
+              {observed
+                ? 'Schedule and affiliation coverage are unverified.'
+                : 'Thursday has incomplete fixture coverage.'}
+            </p>
             <Button onClick={() => onNavigate('planner')}>View Schedule</Button>
           </Panel>
           <Panel className="profile-news">
@@ -226,7 +270,11 @@ export default function PlayerProfile({
               <h2>Upcoming Games</h2>
               <Button onClick={() => onNavigate('planner')}>View Schedule →</Button>
             </div>
-            <p className="muted">Synthetic team schedule · no confirmed appearances</p>
+            <p className="muted">
+              {observed
+                ? 'Observed team schedule · affiliation and coverage unverified'
+                : 'Synthetic team schedule · no confirmed appearances'}
+            </p>
             {games.length ? (
               games.map((game) => (
                 <div className="profile-game" key={game.id}>
@@ -240,7 +288,7 @@ export default function PlayerProfile({
                 </div>
               ))
             ) : (
-              <p>No fixture team games supplied. Complete schedule unknown.</p>
+              <p>No joined team games supplied. Complete schedule unknown.</p>
             )}
           </Panel>
           <Panel className="profile-considerations">

@@ -104,6 +104,7 @@ export function WeekSchedule({
   onMove,
   onReset,
   isReference,
+  isObservation = false,
 }: {
   days: readonly DaySchedule[];
   start: string;
@@ -112,6 +113,7 @@ export function WeekSchedule({
   onMove: (direction: number) => void;
   onReset: () => void;
   isReference: boolean;
+  isObservation?: boolean;
 }) {
   const last = days[6]?.date ?? start;
   return (
@@ -135,9 +137,13 @@ export function WeekSchedule({
           <Button
             className="today-button"
             onClick={onReset}
-            title="Return to the populated synthetic fixture week"
+            title={
+              isObservation
+                ? 'Return to the loaded observation window'
+                : 'Return to the populated synthetic fixture week'
+            }
           >
-            DEMO WEEK
+            {isObservation ? 'LOADED WINDOW' : 'DEMO WEEK'}
           </Button>
         </div>
         <p className="arena-tagline">
@@ -157,7 +163,14 @@ export function WeekSchedule({
           />
         ))}
       </div>
-      {!isReference && <p className="empty-schedule">No fixture games loaded for this week.</p>}
+      {!isReference && !isObservation && (
+        <p className="empty-schedule">No fixture games loaded for this week.</p>
+      )}
+      {isObservation && !days.some((day) => day.games.length) && (
+        <p className="empty-schedule">
+          No team games observed in this window. Complete schedule unknown.
+        </p>
+      )}
     </section>
   );
 }

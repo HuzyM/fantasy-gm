@@ -12,8 +12,10 @@ export function PlayerInspection({
   onClose,
   referenceWeek,
   onProfile,
+  isDemo = true,
 }: {
   onProfile?: () => void;
+  isDemo?: boolean;
   player: Player;
   onClose: () => void;
   referenceWeek: boolean;
@@ -41,7 +43,11 @@ export function PlayerInspection({
 
         <div className="player-hero-copy">
           <span className="jersey-number">
-            {player.nhlId === undefined ? 'FICTIONAL DEMO' : `#${player.number}`}
+            {player.identitySource === 'yahoo'
+              ? 'NHL ID UNVERIFIED'
+              : player.nhlId === undefined
+                ? 'FICTIONAL DEMO'
+                : `#${player.number}`}
           </span>
           <h3 aria-label={player.name}>
             {player.name.split(' ').slice(0, -1).join(' ')}
@@ -54,7 +60,10 @@ export function PlayerInspection({
               <strong>
                 {player.team} <span>·</span> {player.position}
               </strong>
-              <small>{teamAssets[player.team]?.name ?? 'Fictional demo club'}</small>
+              <small>
+                {teamAssets[player.team]?.name ??
+                  (player.identitySource === 'yahoo' ? 'Team unknown' : 'Fictional demo club')}
+              </small>
             </div>
           </div>
         </div>
@@ -99,11 +108,14 @@ export function PlayerInspection({
                 <strong className="average-value">
                   <DataValue datum={player.average} format={(n) => n.toFixed(1)} />
                 </strong>
-                <span className="fixture-trend">SYNTHETIC PERIOD</span>
+                <span className="fixture-trend">
+                  {isDemo ? 'SYNTHETIC PERIOD' : 'PERFORMANCE NOT SUPPLIED'}
+                </span>
               </div>
             </div>
             <p className="stat-caption">
-              2026–27 DEMO SEASON / {player.group === 'goalies' ? 'GOALIE' : 'SKATER'}
+              {isDemo ? '2026–27 DEMO SEASON' : 'REPORTED PLAYER'} /{' '}
+              {player.group === 'goalies' ? 'GOALIE' : 'SKATER'}
             </p>
             <div className="mini-stat-grid">
               {player.stats.map((stat) => (
@@ -119,7 +131,9 @@ export function PlayerInspection({
         )}
         {tab === 'Stats' && (
           <div className="detail-stats">
-            <p>Synthetic season statistics</p>
+            <p>
+              {isDemo ? 'Synthetic season statistics' : 'Performance statistics are unavailable.'}
+            </p>
             {player.stats.map((stat) => (
               <div key={stat.label}>
                 <span>{stat.label}</span>
@@ -134,8 +148,10 @@ export function PlayerInspection({
             <h4>Reported team schedule</h4>
             <p>{referenceWeek ? player.nextGame : 'Unknown — this week has no loaded fixture.'}</p>
             <p>
-              Team games do not guarantee player appearances. All schedules in this prototype are
-              invented.
+              Team games do not guarantee player appearances.{' '}
+              {isDemo
+                ? 'These schedules are synthetic examples.'
+                : 'No complete schedule or confirmed appearance is inferred.'}
             </p>
           </div>
         )}

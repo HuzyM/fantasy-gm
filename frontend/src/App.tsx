@@ -11,6 +11,8 @@ import Connections from './screens/Connections';
 import Settings from './screens/Settings';
 import { overviewFixture } from './fixtures/overview';
 import './application.css';
+import { useLocalSession } from './useLocalSession';
+import { isObservation, providerPlayers } from './api';
 
 function readRoute(): { screen: Screen; playerId?: string } {
   const [screen = '', playerId] = window.location.hash.slice(1).split('/');
@@ -30,6 +32,7 @@ function readRoute(): { screen: Screen; playerId?: string } {
   };
 }
 export default function App() {
+  const local = useLocalSession();
   const [route, setRoute] = useState(readRoute);
   const [search, setSearch] = useState('');
   const [notice, setNotice] = useState('');
@@ -65,39 +68,82 @@ export default function App() {
     window.history.pushState(
       null,
       '',
-      `#${screen}${playerId ? `/${encodeURIComponent(playerId)}` : ''}`,
+      `#${screen}${playerId && local.state !== 'private' ? `/${encodeURIComponent(playerId)}` : ''}`,
     );
     setRoute({ screen, playerId });
     setSearch('');
     setNotice('');
     requestAnimationFrame(() => document.getElementById('main-content')?.focus());
   }
+  useEffect(() => {
+    if (local.state === 'locked') {
+      setSearch('');
+      setNotice('');
+      setRoute({ screen: 'overview' });
+      window.history.replaceState(null, '', '#overview');
+    }
+  }, [local.state]);
   const props = {
     search,
-    players: overviewFixture.players,
+    players: isObservation(local.view) ? providerPlayers(local.view!) : overviewFixture.players,
+    local,
     onNavigate: navigate,
     onNotice: setNotice,
   };
   return (
     <AppShell
       current={route.screen}
-      search={search}
+      search={local.state === 'locked' || local.state === 'loading' ? '' : search}
       onSearch={setSearch}
       onNotice={setNotice}
       onNavigate={navigate}
       display={display}
+      contextName={
+        isObservation(local.view)
+          ? (local.view?.league?.name ?? 'Public NHL schedule')
+          : local.state === 'locked' || local.state === 'loading'
+            ? 'Private local session'
+            : undefined
+      }
+      contextLabel={
+        isObservation(local.view)
+          ? 'LOCAL OBSERVATION · READ-ONLY · COVERAGE UNVERIFIED'
+          : local.state === 'locked' || local.state === 'loading'
+            ? 'PRIVATE SESSION · NO DATA DISPLAYED'
+            : undefined
+      }
     >
-      {route.screen === 'overview' && <Overview {...props} />}
-      {route.screen === 'roster' && <MyRoster {...props} />}
-      {route.screen === 'profile' && <PlayerProfile {...props} selectedId={route.playerId} />}
-      {route.screen === 'planner' && <SchedulePlanner {...props} />}
-      {route.screen === 'comparison' && <PlayerComparison {...props} selectedId={route.playerId} />}
-      {route.screen === 'league' && <League {...props} />}
-      {route.screen === 'connections' && <Connections {...props} />}
-      {route.screen === 'settings' && (
-        <Settings {...props} display={display} onDisplayChange={setDisplay} />
+      {local.state === 'locked' || local.state === 'loading' ? (
+        <section className="panel session-locked">
+          <h1>
+            {local.state === 'loading' ? 'Loading local session' : 'Private session unavailable'}
+          </h1>
+          <p>
+            Private display data has been cleared. Start or reopen the human-operated local launcher
+            link. No synthetic data is substituted.
+          </p>
+        </section>
+      ) : (
+        <div
+          key={`${local.state}-${route.screen}-${route.playerId ?? ''}`}
+          className="screen-content"
+          data-source={local.state}
+        >
+          {route.screen === 'overview' && <Overview {...props} />}
+          {route.screen === 'roster' && <MyRoster {...props} />}
+          {route.screen === 'profile' && <PlayerProfile {...props} selectedId={route.playerId} />}
+          {route.screen === 'planner' && <SchedulePlanner {...props} />}
+          {route.screen === 'comparison' && (
+            <PlayerComparison {...props} selectedId={route.playerId} />
+          )}
+          {route.screen === 'league' && <League {...props} />}
+          {route.screen === 'connections' && <Connections {...props} />}
+          {route.screen === 'settings' && (
+            <Settings {...props} display={display} onDisplayChange={setDisplay} />
+          )}
+        </div>
       )}
-      {notice && (
+      {notice && local.state !== 'locked' && local.state !== 'loading' && (
         <div className="notice visible" role="status">
           {notice}
           <button className="button" onClick={() => setNotice('')}>

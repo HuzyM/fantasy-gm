@@ -13,6 +13,8 @@ import {
 import type { ScreenProps } from '../application';
 import { Button, Panel, TeamMark } from '../components/primitives';
 import '../league-preferences.css';
+import { isObservation } from '../api';
+import { ObservationLeague } from '../components/ObservationPanels';
 
 // Fictional fantasy teams and scores, independent of provider/account data.
 const demoTeams = [
@@ -135,7 +137,14 @@ const matches: readonly [number, number, number, number][] = [
 ];
 type Sort = 'rank' | 'name' | 'points';
 
-export default function League({ search, onNavigate }: ScreenProps) {
+export default function League(props: ScreenProps) {
+  return isObservation(props.local?.view) ? (
+    <ObservationLeague {...props} />
+  ) : (
+    <DemoLeague {...props} />
+  );
+}
+function DemoLeague({ search, onNavigate }: ScreenProps) {
   const [league, setLeague] = useState('riverside');
   const [week, setWeek] = useState(14);
   const [sort, setSort] = useState<Sort>('rank');

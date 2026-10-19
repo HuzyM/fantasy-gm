@@ -5,7 +5,7 @@ const require = createRequire(import.meta.url);
 const axe = await readFile(require.resolve('axe-core/axe.min.js'), 'utf8');
 const routes = (
   process.env.SCREEN_ROUTES ||
-  'roster,profile/matthews,planner,comparison,league,connections,settings'
+  'overview,roster,profile/matthews,planner,comparison,league,connections,settings'
 ).split(',');
 const sizes = [
   ['desktop', 1672, 941],
@@ -32,6 +32,8 @@ for (const route of routes)
       );
       await page.setViewportSize({ width, height });
       await page.goto(`/#${route}`);
+      if (process.env.LOCAL_API === '1')
+        await page.locator('.screen-content[data-source="demo"]').waitFor();
       await page.evaluate(() => document.fonts.ready);
       await page.waitForFunction(() => Array.from(document.images).every((i) => i.complete));
       await page.waitForFunction(() => !document.querySelector('[data-image-state="loading"]'));

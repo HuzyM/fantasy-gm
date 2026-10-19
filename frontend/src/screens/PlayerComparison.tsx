@@ -1,3 +1,4 @@
+import { isObservation } from '../api';
 import { ArrowLeftRight, ArrowRight, ChartNoAxesCombined, CalendarDays } from 'lucide-react';
 import { useState } from 'react';
 import type { ScreenProps } from '../application';
@@ -5,7 +6,7 @@ import { PlayerHeadshot } from '../components/PlayerHeadshot';
 import { Button, DataValue, Panel, TeamMark } from '../components/primitives';
 import { Tabs } from '../components/Tabs';
 import { overviewFixture } from '../fixtures/overview';
-import type { Datum, Player } from '../view-model';
+import type { Datum, Player, DaySchedule } from '../view-model';
 import { dateLabel } from '../view-model';
 import { getPlayerPhoto, teamAssets } from '../media';
 import '../planner-comparison.css';
@@ -51,13 +52,17 @@ function PlayerCard({
       <div className="comparison-player-copy">
         <h2>{player.name}</h2>
         <p>
-          #{player.number} &nbsp; | &nbsp; {player.position}
+          {player.number === undefined ? 'Number unknown' : `#${player.number}`} &nbsp; | &nbsp;{' '}
+          {player.position}
         </p>
         <div className="comparison-identity">
           <TeamMark code={player.team} />
           <span>{teamAssets[player.team]?.name ?? player.team}</span>
         </div>
-        <span className="comparison-badge">Roster fixture · {player.position}</span>
+        <span className="comparison-badge">
+          {player.identitySource === 'yahoo' ? 'Reported roster' : 'Roster fixture'} ·{' '}
+          {player.position}
+        </span>
         <p>
           {getPlayerPhoto(player.nhlId, player.name)
             ? 'Historical licensed photograph'
@@ -78,13 +83,13 @@ function Summary({ player }: { player: Player }) {
         <strong>
           <DataValue datum={player.weeklyPoints} format={(value) => value.toFixed(1)} />
         </strong>
-        <small>Demo weekly points</small>
+        <small>Supplied weekly points</small>
       </div>
       <div>
         <strong>
           <DataValue datum={player.average} format={(value) => value.toFixed(1)} />
         </strong>
-        <small>Demo average</small>
+        <small>Supplied average</small>
       </div>
       <div>
         <strong>
@@ -110,7 +115,7 @@ function Statistics({
   return (
     <Panel className={`comparison-stats comparison-stats-${side}`}>
       <h3>{player.name}</h3>
-      <p>Synthetic statistics · {mode === 'totals' ? 'Supplied totals' : 'Per supplied game'}</p>
+      <p>Supplied statistics · {mode === 'totals' ? 'Supplied totals' : 'Per supplied game'}</p>
       {['GP', 'G', 'A', 'PTS', 'SOG', 'BLK'].map((label) => {
         const datum = statistic(player, label, mode);
         const opposing = statistic(other, label, mode);
@@ -140,12 +145,21 @@ function Statistics({
   );
 }
 
-function Upcoming({ player }: { player: Player }) {
-  const games = overviewFixture.days.flatMap((day) =>
-    day.games
-      .filter((game) => game.away === player.team || game.home === player.team)
-      .map((game) => ({ ...game, date: day.date })),
-  );
+function Upcoming({
+  player,
+  days = overviewFixture.days,
+}: {
+  player: Player;
+  days?: readonly DaySchedule[];
+}) {
+  const games =
+    player.scheduleJoin === 'unverified'
+      ? []
+      : days.flatMap((day) =>
+          day.games
+            .filter((game) => game.away === player.team || game.home === player.team)
+            .map((game) => ({ ...game, date: day.date })),
+        );
   return (
     <div>
       <h3>
@@ -179,7 +193,10 @@ export default function PlayerComparison({
   players,
   onNavigate,
   selectedId,
+  local,
 }: ScreenProps & { selectedId?: string }) {
+  const observed = isObservation(local?.view);
+  const days = observed ? (local?.view?.schedule?.days ?? []) : overviewFixture.days;
   const initialLeft =
     players.find((player) => player.id === selectedId) ??
     players.find((player) => player.nhlId === 8479318) ??
@@ -237,7 +254,7 @@ export default function PlayerComparison({
           <p>
             {players.length === 0
               ? 'No players are available to compare.'
-              : 'Add a second fixture player to compare.'}
+              : 'At least two supplied players are required to compare.'}
           </p>
           <Button onClick={() => onNavigate('roster')}>View roster</Button>
         </Panel>
@@ -250,7 +267,9 @@ export default function PlayerComparison({
           <h1>Player Comparison</h1>
           <p>Compare players head-to-head with stats, schedules and roster context.</p>
         </div>
-        <p className="comparison-provenance">DEMO · SYNTHETIC DATA</p>
+        <p className="comparison-provenance">
+          {observed ? 'LOCAL PROVIDER OBSERVATION' : 'DEMO · SYNTHETIC DATA'}
+        </p>
       </header>
       <div className="comparison-controls">
         <label>
@@ -258,7 +277,7 @@ export default function PlayerComparison({
           <input
             type="search"
             value={query}
-            placeholder="Search fixture players or teams"
+            placeholder="Search supplied players or teams"
             onChange={(event) => setQuery(event.target.value)}
           />
         </label>
@@ -270,7 +289,9 @@ export default function PlayerComparison({
           </select>
         </label>
         <span className="comparison-provenance">
-          Synthetic statistics · supplied fixture sample
+          {observed
+            ? 'Performance unavailable; no provider statistics supplied'
+            : 'Synthetic statistics · supplied fixture sample'}
         </span>
       </div>
       {choices.length === 0 && (
@@ -344,12 +365,14 @@ export default function PlayerComparison({
               <CalendarDays size={20} /> Schedule Comparison
             </h2>
             <p>
-              Team fixtures; player appearances are unconfirmed. Synthetic demo week, December 7–13,
-              2026.
+              Team fixtures; player appearances are unconfirmed.{' '}
+              {observed
+                ? 'Local observation window; coverage and affiliations unverified.'
+                : 'Synthetic demo week, December 7–13, 2026.'}
             </p>
             <div className="comparison-schedule-grid">
-              <Upcoming player={left} />
-              <Upcoming player={right} />
+              <Upcoming player={left} days={days} />
+              <Upcoming player={right} days={days} />
             </div>
           </Panel>
         )}
@@ -371,8 +394,8 @@ export default function PlayerComparison({
           <h2>Upcoming Schedule</h2>
           <p>Supplied team fixtures · ET · appearances unconfirmed</p>
           <div className="comparison-schedule-grid">
-            <Upcoming player={left} />
-            <Upcoming player={right} />
+            <Upcoming player={left} days={days} />
+            <Upcoming player={right} days={days} />
           </div>
           <Button onClick={() => onNavigate('planner')}>
             View full schedule <ArrowRight size={15} />
@@ -380,24 +403,34 @@ export default function PlayerComparison({
         </Panel>
         <Panel className="comparison-insights">
           <h2>Comparison Context</h2>
-          <p>Projections, news and rankings are unavailable. No live provider is connected.</p>
+          <p>
+            Projections, news and rankings are unavailable. No performance provider is connected.
+          </p>
           <dl>
             <div>
               <dt>Statistics</dt>
               <dd>
-                Sample values are synthetic. Per-game statistics divide supplied totals by supplied
-                games played; they are not projections.
+                {observed
+                  ? 'No performance observations supplied.'
+                  : 'Sample values are synthetic.'}{' '}
+                Per-game statistics divide supplied totals by supplied games played; they are not
+                projections.
               </dd>
             </div>
             <div>
               <dt>Schedule coverage</dt>
-              <dd>Thursday is partial. An absent game is not a confirmed off-day.</dd>
+              <dd>
+                {observed
+                  ? 'Complete schedule and affiliation coverage remain unverified.'
+                  : 'Thursday is partial.'}{' '}
+                An absent game is not a confirmed off-day.
+              </dd>
             </div>
             <div>
               <dt>Player identity</dt>
               <dd>
-                Team identities and historical photographs are separate from the synthetic
-                performance data.
+                NHL photo identities require a verified mapping; Yahoo identities are never matched
+                approximately. Historical photographs are separate from performance data.
               </dd>
             </div>
           </dl>

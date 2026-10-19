@@ -16,8 +16,17 @@ import {
 import type { ScreenProps } from '../application';
 import { Button, Panel } from '../components/primitives';
 import '../league-preferences.css';
+import { isObservation } from '../api';
+import { ObservationConnections } from '../components/ObservationPanels';
 
-export default function Connections({ onNavigate, onNotice }: ScreenProps) {
+export default function Connections(props: ScreenProps) {
+  return isObservation(props.local?.view) ? (
+    <ObservationConnections {...props} />
+  ) : (
+    <DemoConnections {...props} />
+  );
+}
+function DemoConnections({ onNavigate, onNotice, local }: ScreenProps) {
   const [league, setLeague] = useState('riverside');
   const [showGuide, setShowGuide] = useState(false);
   const [showActivity, setShowActivity] = useState(false);
@@ -45,6 +54,12 @@ export default function Connections({ onNavigate, onNotice }: ScreenProps) {
           <p>Manage your account, demo leagues, and data access.</p>
         </div>
       </div>
+      {local?.state === 'demo' && (
+        <p className="source-banner">
+          Local Python API running · synthetic schedule adapter verified offline · no providers
+          contacted
+        </p>
+      )}
       <div className="connections-grid">
         <div className="connections-main">
           <Panel className="connections-account">
@@ -204,7 +219,7 @@ export default function Connections({ onNavigate, onNotice }: ScreenProps) {
               <RotateCcw />
               <span>
                 <b>Sync now</b>
-                <small>Unavailable without an approved local API</small>
+                <small>Human launcher required; no automatic refresh</small>
               </span>
             </Button>
             <Button
@@ -220,9 +235,8 @@ export default function Connections({ onNavigate, onNotice }: ScreenProps) {
             </Button>
             {showGuide && (
               <p className="connections-detail">
-                Yahoo connection remains a human-only CLI workflow. Browser authentication and sync
-                are unavailable until the local API privacy boundary is approved. Do not paste
-                credentials or tokens here.
+                Yahoo connection remains a human-only CLI workflow. Use the approved local launcher
+                for a bounded private browser session. Do not paste credentials or tokens here.
               </p>
             )}
             <Button className="connections-tool" onClick={() => onNavigate('league')}>
@@ -281,8 +295,8 @@ export default function Connections({ onNavigate, onNotice }: ScreenProps) {
             <div className="connections-boundary">
               <Info />
               <p>
-                Connection and sync require a human-operated CLI until the local API privacy
-                boundary is approved.
+                Connection and sync require a human-operated CLI through the approved human-operated
+                local launcher.
               </p>
             </div>
           </Panel>

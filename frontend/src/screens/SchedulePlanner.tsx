@@ -1,3 +1,4 @@
+import { isObservation, scheduleDays } from '../api';
 import { CalendarDays, ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
 import { useState } from 'react';
 import type { ScreenProps } from '../application';
@@ -10,16 +11,31 @@ import type { Game, Player } from '../view-model';
 import '../planner-comparison.css';
 
 const members = (game: Game, players: readonly Player[]) =>
-  players.filter((player) => player.team === game.away || player.team === game.home);
+  players.filter(
+    (player) =>
+      player.scheduleJoin !== 'unverified' &&
+      (player.team === game.away || player.team === game.home),
+  );
 
-export default function SchedulePlanner({ search, players, onNavigate, onNotice }: ScreenProps) {
-  const [start, setStart] = useState(overviewFixture.weekStart);
-  const [date, setDate] = useState(overviewFixture.weekStart);
+export default function SchedulePlanner({
+  search,
+  players,
+  onNavigate,
+  onNotice,
+  local,
+}: ScreenProps) {
+  const observed = isObservation(local?.view);
+  const unresolved = players.filter((player) => player.scheduleJoin === 'unverified').length;
+  const loadedStart = observed
+    ? (local?.view?.schedule?.start ?? new Date().toISOString().slice(0, 10))
+    : overviewFixture.weekStart;
+  const [start, setStart] = useState(loadedStart);
+  const [date, setDate] = useState(loadedStart);
   const [gameId, setGameId] = useState('');
   const [filter, setFilter] = useState('all');
   const [highlight, setHighlight] = useState(true);
   const [tab, setTab] = useState('Preview');
-  const days = daysForWeek(start);
+  const days = observed ? scheduleDays(start, local?.view) : daysForWeek(start);
   const selectedDay = days.find((day) => day.date === date) ?? days[0]!;
   const query = search.trim().toLocaleLowerCase('en-US');
   const games = selectedDay.games.filter((game) => {
@@ -66,7 +82,9 @@ export default function SchedulePlanner({ search, players, onNavigate, onNotice 
             <ChevronLeft size={18} />
           </Button>
           <div>
-            <strong>{start === overviewFixture.weekStart ? 'WEEK 14' : 'WEEK VIEW'}</strong>
+            <strong>
+              {!observed && start === overviewFixture.weekStart ? 'WEEK 14' : 'WEEK VIEW'}
+            </strong>
             <span>
               {dateLabel(start, { month: 'short', day: 'numeric' })} –{' '}
               {dateLabel(days[6]!.date, { month: 'short', day: 'numeric', year: 'numeric' })}
@@ -77,31 +95,36 @@ export default function SchedulePlanner({ search, players, onNavigate, onNotice 
           </Button>
           <Button
             onClick={() => {
-              setStart(overviewFixture.weekStart);
-              setDate(overviewFixture.weekStart);
+              setStart(loadedStart);
+              setDate(loadedStart);
               setGameId('');
             }}
           >
-            Demo week
+            {observed ? 'Loaded window' : 'Demo week'}
           </Button>
         </div>
       </header>
       <p className="planner-provenance">
-        DEMO · SYNTHETIC DATA <span>Team schedule fixtures; no confirmed player appearances.</span>
+        {observed ? 'LOCAL PROVIDER OBSERVATION' : 'DEMO · SYNTHETIC DATA'}{' '}
+        <span>Team schedules; no confirmed player appearances.</span>
       </p>
       <section className="planner-week" aria-label="Planner week">
         {days.map((day) => {
           const countKnown = day.count.state === 'verified' || day.count.state === 'incomplete';
           const count = countKnown ? day.count.value : undefined;
           const matched = players.filter((player) =>
-            day.games.some((game) => player.team === game.away || player.team === game.home),
+            day.games.some(
+              (game) =>
+                player.scheduleJoin !== 'unverified' &&
+                (player.team === game.away || player.team === game.home),
+            ),
           ).length;
           const label = dateLabel(day.date, { weekday: 'long', month: 'long', day: 'numeric' });
           return (
             <button
               key={day.date}
               className={`planner-day ${day.date === date ? 'planner-day-active' : ''}`}
-              aria-label={`Select ${label}: ${day.count.state === 'incomplete' ? `${count} observed games, total unknown` : countKnown ? `${count} synthetic games` : 'schedule unknown'}; ${countKnown ? `${matched} roster team matches` : 'roster coverage unknown'}`}
+              aria-label={`Select ${label}: ${day.count.state === 'incomplete' ? `${count} observed games, total unknown` : countKnown ? `${count} supplied games` : 'schedule unknown'}; ${countKnown ? `${matched} roster team matches` : 'roster coverage unknown'}`}
               aria-pressed={day.date === date}
               onClick={() => {
                 setDate(day.date);
@@ -231,7 +254,13 @@ export default function SchedulePlanner({ search, players, onNavigate, onNotice 
                             </span>
                           ))}
                           {matches.length > 2 && <b>+{matches.length - 2}</b>}
-                          {!matches.length && <span>No roster team matches</span>}
+                          {!matches.length && (
+                            <span>
+                              {observed && unresolved
+                                ? 'No supported join · affiliation unknown'
+                                : 'No roster team matches'}
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td>
@@ -339,7 +368,13 @@ export default function SchedulePlanner({ search, players, onNavigate, onNotice 
                         </li>
                       ))}
                     </ul>
-                    {!roster.length && <p>No roster players belong to these teams.</p>}
+                    {!roster.length && (
+                      <p>
+                        {observed && unresolved
+                          ? 'No supported roster join. Unverified affiliations do not establish absence.'
+                          : 'No roster players belong to these teams.'}
+                      </p>
+                    )}
                     {tab === 'Preview' && (
                       <p className="planner-data-note">
                         Projected scoring and team trends are unavailable.
@@ -373,7 +408,11 @@ export default function SchedulePlanner({ search, players, onNavigate, onNotice 
             {days.map((day) => {
               const supplied = day.count.state === 'verified' || day.count.state === 'incomplete';
               const matches = players.filter((player) =>
-                day.games.some((game) => player.team === game.away || player.team === game.home),
+                day.games.some(
+                  (game) =>
+                    player.scheduleJoin !== 'unverified' &&
+                    (player.team === game.away || player.team === game.home),
+                ),
               ).length;
               return (
                 <div key={day.date}>
@@ -402,9 +441,31 @@ export default function SchedulePlanner({ search, players, onNavigate, onNotice 
           >
             About planner tools
           </Button>
-          <p>Schedule values and roster coverage are synthetic examples.</p>
+          <p>
+            {observed
+              ? 'Observed team games only; complete coverage and player appearances remain unverified.'
+              : 'Schedule values and roster coverage are synthetic examples.'}
+          </p>
         </Panel>
       </div>
+      {observed && (
+        <Panel className="observation-panel">
+          <h2>Observation Limits</h2>
+          <p>
+            {unresolved} roster identities have unresolved schedule joins. Team games do not prove
+            appearances. Empty dates are not confirmed off-days.
+          </p>
+          <p>Source issues: {local?.view?.schedule?.issues.join(' · ') || 'No schedule loaded.'}</p>
+          {local?.view?.schedule?.teams.map((team) => (
+            <p key={team.code}>
+              {team.code}: {team.observedGames} observed games · total{' '}
+              {team.countComplete ? 'qualified by source' : 'unknown'} · {team.uncertainDated}{' '}
+              uncertain dated · {team.unplaced} unplaced · back-to-back coverage{' '}
+              {team.backToBackComplete ? 'qualified by source' : 'unverified'}
+            </p>
+          ))}
+        </Panel>
+      )}
     </div>
   );
 }

@@ -25,8 +25,10 @@ export function RosterTable({
   referenceWeek,
   detailed = false,
   onCompare,
+  isDemo = true,
 }: {
   detailed?: boolean;
+  isDemo?: boolean;
   onCompare?: () => void;
   players: readonly Player[];
   allPlayers: readonly Player[];
@@ -55,7 +57,9 @@ export function RosterTable({
           <Button onClick={() => setSortByPoints(!sortByPoints)} aria-pressed={sortByPoints}>
             <ArrowDownWideNarrow size={13} /> Fantasy Points
           </Button>
-          <span className="button period-label">{referenceWeek ? 'This Week' : 'Demo Period'}</span>
+          <span className="button period-label">
+            {!isDemo ? 'Reported' : referenceWeek ? 'This Week' : 'Demo Period'}
+          </span>
           <Button
             className="primary"
             aria-label="Compare players"
@@ -135,7 +139,11 @@ export function RosterTable({
                     <span>
                       {player.name}
                       {player.nhlId === undefined && (
-                        <small className="fictional-label">Fictional demo</small>
+                        <small className="fictional-label">
+                          {player.identitySource === 'yahoo'
+                            ? 'Yahoo identity · NHL match unverified'
+                            : 'Fictional demo'}
+                        </small>
                       )}
                     </span>
                   </button>
@@ -205,8 +213,9 @@ export function RosterTable({
         )}
       </div>
       <p className="roster-footnote">
-        DEMO DATA <span>·</span> FANTASY STATS SUBJECT TO LEAGUE SCORING <span>·</span> TEAM GAME ≠
-        PLAYER APPEARANCE <span>·</span> INJURY EXAMPLES USE FICTIONAL PLAYERS
+        {isDemo ? 'DEMO DATA' : 'LOCAL OBSERVATION · COVERAGE UNVERIFIED'} <span>·</span> FANTASY
+        STATS SUBJECT TO LEAGUE SCORING <span>·</span> TEAM GAME ≠ PLAYER APPEARANCE <span>·</span>{' '}
+        {isDemo ? 'INJURY EXAMPLES USE FICTIONAL PLAYERS' : 'UNKNOWN INJURY ≠ HEALTHY'}
       </p>
     </Panel>
   );
