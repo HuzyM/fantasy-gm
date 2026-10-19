@@ -96,7 +96,9 @@ export function ObservationConnections({ local, onNavigate }: ScreenProps) {
             ))}
             <p>
               {privateData
-                ? 'Read-only Yahoo GETs only.'
+                ? view?.schedule
+                  ? 'Read-only Yahoo GETs and public PuckAPI schedule requests only.'
+                  : 'Read-only Yahoo GETs only.'
                 : 'Read-only public PuckAPI schedule requests only; no Yahoo requests.'}{' '}
               No transactions, lineup writes, browser credential input, cookies, saved private data
               or automated refresh.

@@ -217,6 +217,14 @@ describe('synthetic tests of private transport boundaries', () => {
             : 'No schedule observation was supplied. Load one through a new human-operated launcher session.',
         ),
       ).toBeVisible();
+      await user.click(screen.getByRole('button', { name: '06 Connections' }));
+      expect(
+        screen.getByText(
+          loaded
+            ? /Read-only Yahoo GETs and public PuckAPI schedule requests only/
+            : /Read-only Yahoo GETs only/,
+        ),
+      ).toBeVisible();
     },
   );
   it('restores each private profile from memory on Back and Forward without persisting identities', async () => {

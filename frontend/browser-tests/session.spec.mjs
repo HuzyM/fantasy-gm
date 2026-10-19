@@ -128,6 +128,29 @@ for (const width of [1672, 390])
         cookie: document.cookie,
       })),
     ).toEqual({ local: 0, session: 0, cookie: '' });
+    await page.route('**/api/view', (r) =>
+      r.fulfill({
+        json: {
+          ...view,
+          schedule: {
+            start: '2026-10-19',
+            end: '2026-10-25',
+            timezone: 'America/Toronto',
+            observedAt: '2026-10-19T00:00:00Z',
+            issues: [],
+            days: [],
+            teams: [],
+          },
+        },
+      }),
+    );
+    await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+    if (width < 900)
+      await page.getByRole('button', { name: 'Open navigation', exact: true }).click();
+    await page.getByRole('button', { name: '06 Connections', exact: true }).click();
+    await expect(
+      page.getByText(/Read-only Yahoo GETs and public PuckAPI schedule requests only/),
+    ).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
     expect(external).toEqual([]);
     expect(errors).toEqual([]);
