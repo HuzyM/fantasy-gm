@@ -37,6 +37,60 @@ beforeEach(() =>
 );
 afterEach(() => vi.unstubAllGlobals());
 describe('synthetic tests of private transport boundaries', () => {
+  it.each(['response', 'failure'] as const)(
+    'ignores an older public %s after a newer refresh succeeds',
+    async (outcome) => {
+      window.history.replaceState(null, '', '/#connections');
+      let phase = 'initial';
+      let resolveOld: (value: unknown) => void = () => {};
+      let rejectOld: (reason: Error) => void = () => {};
+      const pending = new Promise<unknown>((resolve, reject) => {
+        resolveOld = resolve;
+        rejectOld = reject;
+      });
+      const publicView = (label: string) => ({
+        mode: 'synthetic',
+        source: 'puckapi',
+        provenance: [label],
+        league: null,
+        roster: null,
+        settings: null,
+        schedule: null,
+      });
+      const fetcher = vi.fn().mockImplementation((url: string) => {
+        if (url.endsWith('/status'))
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({ mode: 'synthetic', yahoo: 'disconnected', schedule: 'observed' }),
+          });
+        if (phase === 'old') return pending;
+        return Promise.resolve({
+          ok: true,
+          json: async () => publicView(`Synthetic ${phase} observation`),
+        });
+      });
+      vi.stubGlobal('fetch', fetcher);
+      render(<App />);
+      await screen.findByText('Synthetic initial observation');
+      phase = 'old';
+      fireEvent.focus(window);
+      await waitFor(() =>
+        expect(fetcher.mock.calls.filter(([url]) => url === '/api/view')).toHaveLength(2),
+      );
+      phase = 'latest';
+      fireEvent.focus(window);
+      await screen.findByText('Synthetic latest observation');
+      await act(async () => {
+        if (outcome === 'failure') rejectOld(new Error('Synthetic older local failure'));
+        else resolveOld({ ok: true, json: async () => publicView('Synthetic old observation') });
+      });
+      expect(screen.getByText('Synthetic latest observation')).toBeVisible();
+      expect(screen.queryByText('Synthetic old observation')).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('heading', { name: 'Local observation unavailable' }),
+      ).not.toBeInTheDocument();
+    },
+  );
   it.each([
     ['puckapi', 'synthetic'],
     ['synthetic', 'puckapi'],

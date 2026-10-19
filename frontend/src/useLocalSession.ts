@@ -37,11 +37,14 @@ export function useLocalSession(): LocalSession {
       referrerPolicy: 'no-referrer' as const,
       signal: controller.signal,
     };
+    let generation = 0;
     async function load() {
+      const requestedGeneration = ++generation;
       try {
         const response = await fetch('/api/status', options);
         if (!response.ok) throw new Error();
         const status: unknown = await response.json();
+        if (controller.signal.aborted || requestedGeneration !== generation) return;
         if (
           !status ||
           typeof status !== 'object' ||
@@ -68,14 +71,14 @@ export function useLocalSession(): LocalSession {
         if (!data.ok) throw new Error();
         const parsed = parseView(await data.json());
         if (isPrivate !== (parsed.mode === 'private')) throw new Error();
-        if (controller.signal.aborted) return;
+        if (controller.signal.aborted || requestedGeneration !== generation) return;
         if (privateMode.current && (!requestCapability || requestCapability !== capability.current))
           return;
         observedMode.current = parsed.source !== 'synthetic';
         setView(parsed);
         setState(isPrivate ? 'private' : parsed.source === 'puckapi' ? 'public' : 'demo');
       } catch {
-        if (controller.signal.aborted) return;
+        if (controller.signal.aborted || requestedGeneration !== generation) return;
         if (privateMode.current || observedMode.current) clear();
         else {
           setView(null);
