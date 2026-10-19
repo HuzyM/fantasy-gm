@@ -27,7 +27,7 @@ milestones. The final branch contains the complete runnable application.
 - All eight screens pass 32 production browser cases against the default synthetic Python server at 1672×941, 1440×900, 768×1024 and 390×844. Tests check overflow, loaded local assets, keyboard/control interactions, no external browser requests, no page errors and automated axe WCAG A/AA rules.
 - Three additional browser cases (desktop/mobile transport and restart rotation) exercise private bootstrap, authorization headers, exact identity/fallbacks, private-ID-free URLs, absence of browser storage/cookies and disconnect using synthetic protocol inputs only.
 - The retained Overview browser interaction regression remains part of CI. Same-platform screenshot assertions use reviewed Windows baselines under `docs/frontend/win32`; Linux CI captures evidence independently of Windows font rasterization.
-- Backend boundary review completed independently with no actionable findings. Final integration review identified a P1 stale-session gap on server restart. Private checks now authenticate the capability against the local in-memory view on every poll/focus; unit and browser regressions reject old capabilities and clear the display. GitHub review additionally identified public transient-error recovery, observed-date month formatting and launcher interpreter instructions; all have focused regressions or corrected commands. Independent verification is required before handoff. Automated checks do not certify assistive technology or live provider correctness.
+- Backend boundary review completed independently with no actionable findings. Final integration review identified a P1 stale-session gap on server restart. Private checks now authenticate the capability against the local in-memory view on every poll/focus; unit and browser regressions reject old capabilities and clear the display. Other accepted findings covered public recovery, observed-date formatting, launcher commands, bench/reserve filtering, supported sample leagues and navigation. Independent final verification passed runtime head `2b282e7`, including 22 focused tests, types, formatting and code-path inspection, with no remaining actionable findings. The root separately verified the full synthetic browser/visual/accessibility suite. Automated checks do not certify assistive technology or live provider correctness.
 
 ## Intentional visual differences
 
@@ -37,7 +37,10 @@ or uniforms. Fixture player counts derive from loaded rows. Unsupported facts ar
 shown as unavailable; fictional account health, forecasts, current injuries, scores
 and confirmed appearances are never substituted. Tables scroll locally and panels
 stack on small screens. Settings has a collapsed preview so unsupported global
-behavior is not implied. Official NHL logo usage/redistribution rights remain
+behavior is not implied. Screens reuse the established Overview shell and fonts;
+panel density, historical photo poses and unavailable-data panels differ from the
+concepts. Connections offers only the supported Riverside sample instead of the
+reference's additional league choices. Official NHL logo usage/redistribution rights remain
 unresolved in `frontend/ASSETS.md`; no commercial clearance is claimed.
 
 ## Human-only acceptance still required
