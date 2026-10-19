@@ -1,44 +1,170 @@
-name: Frontend
+name: Application CI
 on:
-  push:
   pull_request:
+  push:
+    branches: [main]
+  merge_group:
+  workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: application-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+defaults:
+  run:
+    shell: bash
 jobs:
-  frontend:
+  python-linux:
+    name: Python Linux
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.12.23"
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+      - run: uv sync --locked
+      - name: Offline Python regressions
+        run: uv run --locked pytest --junitxml=test-results/python-linux.xml
+      - name: Python lint and formatting
+        run: uv run --locked ruff check src tests && uv run --locked ruff format --check src tests
+      - name: Python dependency audit (advisory)
+        id: python-audit
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        run: |
+          mkdir -p test-results
+          uv export --locked --all-groups --no-emit-project --no-hashes --output-file test-results/python-requirements.txt
+          uvx --from pip-audit==2.10.1 pip-audit -r test-results/python-requirements.txt --no-deps --disable-pip --progress-spinner off --format json --output test-results/python-audit.json
+      - name: Dependency audit notice
+        if: ${{ !cancelled() }}
+        run: |
+          echo 'Python dependency scan is advisory; findings and service failures require triage, not automatic dependency changes.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Audit step outcome: ${{ steps.python-audit.outcome }}. See the python-linux-evidence artifact.' >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: python-linux-evidence-${{ github.run_attempt }}
+          path: test-results/
+          retention-days: 7
+  frontend:
+    name: Frontend and local API
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PLAYWRIGHT_CHANNEL: chromium
+      LOCAL_API: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
-          node-version: '22.15.0'
+          node-version: "22.15.0"
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: "3.12"
       - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.12.23"
+          enable-cache: true
+          cache-dependency-glob: uv.lock
       - run: uv sync --locked
-      - name: Python regression and Windows-target type checks
-        # Existing private terminal code uses guarded Windows ctypes APIs.
-        run: uv run pytest && uv run ruff check src tests && uv run mypy --platform win32
       - run: npm ci
         working-directory: frontend
-      - run: npm run format:check && npm run typecheck && npm test && npm run build
+      - name: Frontend formatting and unit regressions
+        run: npm run format:check && npm test
         working-directory: frontend
       - run: npx playwright install --with-deps chromium
         working-directory: frontend
-      - run: node scripts/verify-browser.mjs
+      - name: TypeScript, production build and all synthetic API browser tests
+        # Existing Playwright webServer builds once and starts only the default synthetic API.
+        run: npx playwright test
         working-directory: frontend
-        env:
-          PLAYWRIGHT_CHANNEL: chromium
-      - run: npx playwright test
+      - name: Retained Overview interaction regression
+        run: node scripts/verify-browser.mjs
         working-directory: frontend
-        env:
-          PLAYWRIGHT_CHANNEL: chromium
-          LOCAL_API: '1'
+      - name: npm dependency audit (advisory)
+        id: npm-audit
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        run: mkdir -p output && npm audit --json > output/npm-audit.json
+        working-directory: frontend
+      - name: Dependency audit notice
+        if: ${{ !cancelled() }}
+        run: |
+          echo 'npm dependency scan includes runtime and development packages and is advisory pending triage.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Audit step outcome: ${{ steps.npm-audit.outcome }}. See the frontend-linux-evidence artifact.' >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: ${{ !cancelled() }}
         with:
-          name: browser-evidence
-          path: frontend/output/playwright
+          name: frontend-linux-evidence-${{ github.run_attempt }}
+          path: frontend/output/
+          retention-days: 7
+  python-windows:
+    name: Python Windows and browser
+    runs-on: windows-2025
+    timeout-minutes: 20
+    env:
+      PLAYWRIGHT_CHANNEL: chromium
+      LOCAL_API: "1"
+      # Original local Chrome baseline environment was not recorded. Functional assertions still block.
+      VISUAL_COMPARE: advisory
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.12.23"
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+      - run: uv sync --locked
+      - name: Complete offline Windows Python regressions
+        run: uv run --locked pytest --junitxml=test-results/python-windows.xml
+      - name: Native Windows strict type checks
+        run: uv run --locked mypy
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.15.0"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+        working-directory: frontend
+      - run: npx playwright install chromium
+        working-directory: frontend
+      - name: Production synthetic API browser tests and advisory visual comparisons
+        run: npx playwright test
+        working-directory: frontend
+      - name: Visual comparison summary
+        if: ${{ !cancelled() }}
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          records = [json.loads(p.read_text()) for p in Path('frontend/output/visual').glob('*.json')]
+          matches = sum(r['status'] == 'matched' for r in records)
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a', encoding='utf-8') as summary:
+              summary.write(f'### Windows visual investigation (advisory)\n{matches}/{len(records)} screenshots matched existing local baselines; expected 32 comparisons.\n')
+              summary.write('Functional browser/accessibility/API assertions remain blocking. See windows-evidence for environment, screenshots, differences and result JSON.\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: windows-evidence-${{ github.run_attempt }}
+          path: |
+            test-results/
+            frontend/output/
+          retention-days: 7

@@ -2,6 +2,9 @@ import { defineConfig } from 'playwright/test';
 export default defineConfig({
   testDir: './browser-tests',
   workers: 1,
+  forbidOnly: Boolean(process.env.CI),
+  updateSnapshots: process.env.CI ? 'none' : undefined,
+  reporter: [['list'], ['json', { outputFile: 'output/browser-results.json' }]],
   timeout: 60000,
   outputDir: 'output/screens',
   snapshotPathTemplate: '../docs/frontend/{platform}/{arg}{ext}',

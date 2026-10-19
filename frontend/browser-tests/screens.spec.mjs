@@ -1,8 +1,32 @@
 import { test, expect } from 'playwright/test';
-import { readFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
+import os from 'node:os';
 const require = createRequire(import.meta.url);
 const axe = await readFile(require.resolve('axe-core/axe.min.js'), 'utf8');
+test.beforeAll(async ({ browser }) => {
+  await mkdir('output/visual', { recursive: true });
+  await mkdir('output/playwright/screens', { recursive: true });
+  await writeFile(
+    'output/playwright/environment.json',
+    JSON.stringify(
+      {
+        platform: process.platform,
+        osRelease: os.release(),
+        runnerImage: process.env.ImageVersion ?? 'local/unrecorded',
+        node: process.version,
+        browser: browser.version(),
+        playwright: require('playwright/package.json').version,
+        fonts: {
+          barlow: require('@fontsource/barlow/package.json').version,
+          condensed: require('@fontsource/barlow-condensed/package.json').version,
+        },
+      },
+      null,
+      2,
+    ),
+  );
+});
 const routes = (
   process.env.SCREEN_ROUTES ||
   'overview,roster,profile/matthews,planner,comparison,league,connections,settings'
@@ -46,16 +70,28 @@ for (const route of routes)
       expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
       const imageName = `${route.replace('/', '-')}-${name}.png`;
       await page.screenshot({
-        path: `output/playwright/${imageName}`,
+        path: `output/playwright/screens/${imageName}`,
         fullPage: true,
         animations: 'disabled',
       });
-      if (process.env.VISUAL_COMPARE === '1')
-        await expect(page).toHaveScreenshot(imageName, {
-          fullPage: true,
-          animations: 'disabled',
-          maxDiffPixelRatio: 0.005,
-        });
+      if (['1', 'advisory'].includes(process.env.VISUAL_COMPARE)) {
+        const advisory = process.env.VISUAL_COMPARE === 'advisory';
+        const result = { image: imageName, status: 'matched' };
+        try {
+          await expect(page).toHaveScreenshot(imageName, {
+            fullPage: true,
+            animations: 'disabled',
+            maxDiffPixelRatio: 0.005,
+            ...(advisory ? { timeout: 2000 } : {}),
+          });
+        } catch (error) {
+          if (!advisory) throw error;
+          result.status = 'mismatch';
+          result.detail = String(error.message).slice(0, 2000);
+          testInfo.annotations.push({ type: 'visual-advisory', description: imageName });
+        }
+        await writeFile(`output/visual/${imageName}.json`, JSON.stringify(result));
+      }
       await page.addScriptTag({ url: '/axe-check.js' });
       const violations = await page.evaluate(async () =>
         (
@@ -130,22 +166,26 @@ for (const route of routes)
       if (route === 'settings') {
         await page.getByRole('switch', { name: 'Show team logos', exact: true }).click();
         await expect(page.locator('.app-shell')).toHaveClass(/without-team-logos/);
-        await page.getByRole('switch', { name: 'Compact view', exact: true }).click();
-        await expect(page.locator('.app-shell')).toHaveClass(/compact-display/);
         const nav = page.getByRole('navigation', { name: 'Settings sections' });
-        if (width > 1050) {
-          const navBounds = await nav.boundingBox();
-          const cardsBounds = await page.locator('.settings-center-bottom').boundingBox();
-          expect(navBounds).not.toBeNull();
-          expect(cardsBounds).not.toBeNull();
-          expect(cardsBounds.x).toBeGreaterThanOrEqual(navBounds.x + navBounds.width);
-        }
-        await nav.getByRole('button', { name: /Notifications/ }).click();
-        await expect(page).toHaveURL(/#settings$/);
-        for (const label of ['Account', 'About']) {
-          const section = nav.getByRole('button', { name: new RegExp(`^${label}`) });
-          await section.click();
-          await expect(section).toHaveAttribute('aria-pressed', 'true');
+        for (const compact of [false, true]) {
+          if (compact) {
+            await page.getByRole('switch', { name: 'Compact view', exact: true }).click();
+            await expect(page.locator('.app-shell')).toHaveClass(/compact-display/);
+          }
+          if (width > 1050) {
+            const navBounds = await nav.boundingBox();
+            const cardsBounds = await page.locator('.settings-center-bottom').boundingBox();
+            expect(navBounds).not.toBeNull();
+            expect(cardsBounds).not.toBeNull();
+            expect(cardsBounds.x).toBeGreaterThanOrEqual(navBounds.x + navBounds.width);
+          }
+          for (const label of ['Notifications', 'Account', 'About']) {
+            const section = nav.getByRole('button', { name: new RegExp(`^${label}`) });
+            await section.click();
+            await expect(section).toHaveAttribute('aria-pressed', 'true');
+            await expect(section).toBeFocused();
+          }
+          await expect(page).toHaveURL(/#settings$/);
         }
       }
       expect(external).toEqual([]);
