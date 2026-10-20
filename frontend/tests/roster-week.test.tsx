@@ -179,6 +179,76 @@ const day = (date: string, games: Game[]): DaySchedule => ({
 });
 
 describe('roster weekly observations', () => {
+  it('counts back-to-back opportunities by consecutive team dates in a valid regular-season week', () => {
+    const dates = ['2026-10-19', '2026-10-20', '2026-10-22', '2026-10-23'];
+    const days = dates.map((date, index) => {
+      const fixture = game(`regular-${index}`, `${date}T23:00:00Z`);
+      return day(date, index === 0 ? [fixture, fixture] : [fixture]);
+    });
+    const row = selectRosterWeek('2026-10-19', days, [player()]).rows[0]!;
+    expect(row.scheduledCount).toBe(4);
+    expect(row.backToBackPairs).toBe(2);
+    expect(row.cells.map((cell) => cell.backToBack)).toEqual([
+      true,
+      true,
+      false,
+      true,
+      true,
+      false,
+      false,
+    ]);
+    expect(row.cells.every((cell) => cell.sameDayAnomaly === false)).toBe(true);
+  });
+
+  it('flags distinct same-date observations without multiplying back-to-back opportunities', async () => {
+    const user = userEvent.setup();
+    const first = game('monday-one', '2026-10-19T23:00:00Z');
+    const days = [
+      day('2026-10-19', [first, first, game('monday-two', '2026-10-20T00:00:00Z')]),
+      day('2026-10-20', [game('tuesday', '2026-10-21T00:00:00Z')]),
+    ];
+    const row = selectRosterWeek('2026-10-19', days, [player()]).rows[0]!;
+    expect(row.scheduledCount).toBe(3);
+    expect(row.backToBackPairs).toBe(1);
+    expect(row.cells.map((cell) => cell.sameDayAnomaly)).toEqual([
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+    ]);
+    const view = {
+      mode: 'private',
+      source: 'yahoo',
+      schedule: {
+        start: '2026-10-19',
+        end: '2026-10-25',
+        days,
+        teams: [],
+        issues: [],
+      },
+    } as unknown as LocalView;
+    render(
+      <SchedulePlanner
+        players={[player()]}
+        search=""
+        onNavigate={vi.fn()}
+        onNotice={vi.fn()}
+        local={{ view, state: 'private', disconnect: async () => {} }}
+      />,
+    );
+    await user.click(screen.getByRole('tab', { name: 'Roster week' }));
+    const table = screen.getByRole('table', { name: 'Weekly roster schedule' });
+    expect(
+      within(table).getByText(
+        'Schedule anomaly: multiple scheduled team games observed on this date.',
+      ),
+    ).toBeVisible();
+    expect(within(table).getByRole('cell', { name: /^1\s*date pair observed$/ })).toBeVisible();
+  });
+
   it('retains excluded and undated evidence while blocking unverified affiliations', () => {
     const days = [
       day('2026-10-19', [
@@ -195,6 +265,7 @@ describe('roster weekly observations', () => {
       player('unverified', { scheduleJoin: 'unverified' }),
     ]);
     expect(week.rows[0]!.scheduledCount).toBe(1);
+    expect(week.rows[0]!.cells.every((cell) => !cell.sameDayAnomaly)).toBe(true);
     expect(week.rows[0]!.cells[0]!.fixtures).toHaveLength(9);
     expect(
       week.rows[0]!.cells[0]!.fixtures.find(({ game }) => game.id === 'missing-time')!.status,
@@ -239,6 +310,7 @@ describe('roster weekly observations', () => {
     ];
     const week = selectRosterWeek('2026-10-19', days, [player()]);
     expect(week.rows[0]!.scheduledCount).toBe(0);
+    expect(week.rows[0]!.cells.every((cell) => !cell.sameDayAnomaly)).toBe(true);
     expect(week.rows[0]!.cells[0]!.fixtures[0]!.status).toBe('Conflicting observation');
     const view = {
       schedule: { start: '2026-10-19', end: '2026-10-25', days },

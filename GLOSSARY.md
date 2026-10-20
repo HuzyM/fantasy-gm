@@ -21,5 +21,5 @@ The number of distinct eligible team fixtures recorded as scheduled within a wee
 _Avoid_: Games remaining, player starts
 
 **Back-to-back opportunity**:
-Two eligible scheduled team fixtures on consecutive Toronto calendar dates, both inside the selected weekly window. Both fixtures must be observed; the opportunity does not confirm player participation.
+A team's eligible scheduled fixtures on two consecutive Toronto calendar dates, both inside the selected weekly window. Each adjacent date pair counts once; distinct eligible fixtures for the same team on one date are anomalous under normal regular-season scheduling and do not multiply opportunities or confirm player participation.
 _Avoid_: Guaranteed back-to-back starts

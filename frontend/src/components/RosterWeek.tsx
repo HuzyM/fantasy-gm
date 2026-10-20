@@ -191,6 +191,11 @@ export function RosterWeek({
                       {joined && cell.backToBack && (
                         <span className="roster-week-b2b">Back-to-back</span>
                       )}
+                      {cell.sameDayAnomaly && (
+                        <small className="roster-week-warning">
+                          Schedule anomaly: multiple scheduled team games observed on this date.
+                        </small>
+                      )}
                       {joined && cell.coverage !== 'verified' && (
                         <small className="roster-week-coverage">
                           {cell.coverage === 'incomplete'
@@ -207,7 +212,9 @@ export function RosterWeek({
                   <td className="roster-week-count">
                     {joined ? row.backToBackPairs : 'Unknown'}
                     {joined && (
-                      <small>{row.backToBackPairs === 1 ? 'pair' : 'pairs'} observed</small>
+                      <small>
+                        {row.backToBackPairs === 1 ? 'date pair' : 'date pairs'} observed
+                      </small>
                     )}
                   </td>
                 </tr>

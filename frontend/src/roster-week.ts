@@ -37,11 +37,15 @@ export function selectRosterWeek(
               ? `Date/time unverified · ${game.state ?? 'UNKNOWN'}`
               : (game.state ?? 'UNKNOWN'),
         })),
+        sameDayAnomaly: false,
         backToBack: false,
       }));
       let backToBackPairs = 0;
       cells.forEach((cell, index) => {
+        cell.sameDayAnomaly =
+          observed && cell.fixtures.filter((fixture) => fixture.eligible).length > 1;
         const next = cells[index + 1];
+        // A team-date opportunity counts once, not once per fixture combination.
         if (
           cell.fixtures.some((fixture) => fixture.eligible) &&
           next?.fixtures.some((fixture) => fixture.eligible)

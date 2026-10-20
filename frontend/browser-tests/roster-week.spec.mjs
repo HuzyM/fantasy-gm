@@ -133,7 +133,12 @@ for (const width of [1672, 390]) {
       await expect(
         row.getByRole('cell', { name: '3 observed; total unknown', exact: true }),
       ).toHaveCount(1);
-      await expect(row.getByRole('cell', { name: '1 pair observed', exact: true })).toHaveCount(1);
+      await expect(
+        row.getByRole('cell', { name: '1 date pair observed', exact: true }),
+      ).toHaveCount(1);
+      await expect(
+        row.getByText('Schedule anomaly: multiple scheduled team games observed on this date.'),
+      ).toHaveCount(1);
       await expect(row.getByText('Back-to-back', { exact: true })).toHaveCount(2);
       await expect(row.getByText(/conflicting observation/)).toHaveCount(2);
       await expect(row.getByText(/date\/time unverified/)).toBeVisible();
