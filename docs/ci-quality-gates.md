@@ -76,6 +76,16 @@ in the new recorded environment. Do not automatically replace approved images or
 relax the tolerance to make CI pass. Rendering drift requires review of the
 environment or any proposed baseline update; retain the failing evidence.
 
+The weekly roster matrix adds Daily matchups / Roster week navigation. Its four
+Planner baselines were inspected at desktop, laptop, tablet and mobile sizes,
+including the comparison diffs, before replacement. The intentional navigation
+row shifts existing content down 62 pixels. The other 28 images and the 0.005
+comparison tolerance remain unchanged. Review environment: Windows 10.0.26200,
+Chrome 155.0.8059.80, Node 22.15.0, Playwright 1.64.1 and bundled fonts 5.3.0.
+Separate fabricated-observation captures exercise the matrix; browser assertions
+also bound its sticky player column and verify mobile fixture exposure after
+scrolling, since page-overflow and accessibility checks alone missed that defect.
+
 ## Advisory dependency audits
 
 Linux Python exports all locked dependency groups excluding the local project,

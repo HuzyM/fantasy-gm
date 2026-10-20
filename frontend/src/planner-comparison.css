@@ -4,6 +4,168 @@
   max-width: 100%;
   color: var(--text, #e8f3ff);
 }
+.planner-view-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid #31516b;
+}
+.planner-view-tabs button {
+  padding: 12px 20px;
+  background: #091e30;
+  color: #c1d5e6;
+  border: 1px solid #31516b;
+  border-bottom: 3px solid transparent;
+  border-radius: 4px 4px 0 0;
+  font: inherit;
+  cursor: pointer;
+}
+.planner-view-tabs button[aria-selected='true'] {
+  color: #83e6ff;
+  border-bottom-color: #42d6fc;
+  background: #11344c;
+}
+.roster-week-panel {
+  min-width: 0;
+  padding: 20px;
+}
+.roster-week-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 18px;
+}
+.roster-week-heading h2 {
+  margin: 0 0 7px;
+  font-size: 22px;
+}
+.roster-week-heading p,
+.roster-week-note {
+  color: #b2ccdf;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.roster-week-note {
+  margin: 14px 0;
+  max-width: 115ch;
+}
+.roster-week-filters {
+  flex-wrap: wrap;
+}
+.roster-week-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid #31516b;
+  border-radius: 5px;
+}
+.roster-week-table {
+  width: 100%;
+  min-width: 1240px;
+  table-layout: fixed;
+  white-space: normal;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 13px;
+}
+.roster-week-table th,
+.roster-week-table td {
+  padding: 12px 10px;
+  vertical-align: top;
+  text-align: left;
+  border-bottom: 1px solid #264357;
+  border-right: 1px solid #264357;
+  min-width: 110px;
+}
+.roster-week-table thead th {
+  background: #103047;
+  color: #d7efff;
+}
+.roster-week-table th:nth-child(n) {
+  width: auto;
+  overflow-wrap: anywhere;
+}
+.roster-week-table th:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  width: 200px;
+  min-width: 170px;
+  background: #0b2335;
+  box-shadow: 2px 0 5px #0005;
+}
+.roster-week-table th span,
+.roster-week-table small,
+.roster-week-table li span {
+  display: block;
+  margin-top: 5px;
+}
+.roster-week-table tbody th {
+  font-weight: 400;
+}
+.roster-week-table th .button {
+  border: 0;
+  padding: 0;
+  color: #8ceaff;
+  background: transparent;
+  white-space: normal;
+  text-align: left;
+}
+.roster-week-table ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.roster-week-table li {
+  padding: 8px;
+  margin-bottom: 7px;
+  border-radius: 4px;
+  background: #143a4c;
+  border-left: 3px solid #54ddfc;
+}
+.roster-week-table li.roster-fixture-other {
+  border-left-color: #d2b481;
+  background: #2d3033;
+}
+.roster-week-empty,
+.roster-week-table small {
+  color: #b7cbdc;
+  font-size: 12px;
+  font-weight: 400;
+}
+.roster-week-table .roster-week-warning {
+  color: #f2ce94;
+  line-height: 1.5;
+}
+.roster-week-b2b {
+  display: inline-block;
+  color: #9ceacb;
+  font-size: 12px;
+  border: 1px solid #39755f;
+  border-radius: 3px;
+  padding: 3px 5px;
+}
+.roster-week-count {
+  font-size: 20px;
+  font-weight: 600;
+}
+@media (max-width: 600px) {
+  .roster-week-panel {
+    padding: 12px;
+  }
+  .roster-week-filters {
+    align-items: stretch;
+    gap: 10px;
+    width: 100%;
+  }
+  .roster-week-filters label {
+    flex: 1 1 120px;
+  }
+  .roster-week-table th:first-child {
+    min-width: 145px;
+    width: 145px;
+  }
+}
 .planner-heading,
 .planner-title,
 .planner-week-controls,
