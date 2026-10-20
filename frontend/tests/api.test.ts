@@ -34,7 +34,7 @@ describe('local display adapter', () => {
     expect(player.injury.state).toBe('unknown');
     expect(player.weeklyPoints.state).toBe('unsupported');
     expect(player.rosterSlot).toEqual({ state: 'verified', value: 'IR' });
-    expect(player.nextGame).toBe('Unknown');
+    expect(player.nextGame).toBe('Unavailable');
     expect(player.stats).toEqual([]);
   });
   it('keeps absent schedule dates unknown rather than zero and does not reuse fixtures', () => {

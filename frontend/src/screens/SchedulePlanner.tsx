@@ -227,7 +227,10 @@ export default function SchedulePlanner({
                       key={game.id}
                       className={`${game.id === selectedGame?.id ? 'planner-row-selected' : ''} ${highlight && matches.length ? 'planner-row-rostered' : ''}`}
                     >
-                      <td>{game.time}</td>
+                      <td>
+                        {game.time}
+                        {observed && <small className="observed-game-note">{game.state}</small>}
+                      </td>
                       <td>
                         <div className="planner-team">
                           <TeamMark code={game.away} />
@@ -455,6 +458,13 @@ export default function SchedulePlanner({
       {observed && (
         <Panel className="observation-panel">
           <h2>Observation Limits</h2>
+          <p>
+            Loaded window: {local?.view?.schedule?.start ?? 'Unavailable'} –{' '}
+            {local?.view?.schedule?.end ?? 'Unavailable'} · America/Toronto. Source observed at{' '}
+            {local?.view?.schedule?.observedAt ?? 'Unavailable'}. Reported affiliations may be
+            stale. Game states below describe observations, including completed or uncertain
+            fixtures; they do not establish upcoming appearances.
+          </p>
           <p>
             {unresolved} roster identities have unresolved schedule joins. Team games do not prove
             appearances. Empty dates are not confirmed off-days.

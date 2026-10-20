@@ -20,6 +20,45 @@ def test_public_window_uses_toronto_date_at_utc_midnight() -> None:
     )
 
 
+@pytest.mark.parametrize(
+    "changes,eligible",
+    [
+        ({}, True),
+        ({"schedule_normal": False}, False),
+        ({"state": "COMPLETED"}, False),
+        ({"state": "UNKNOWN"}, False),
+        ({"game_type": "UNKNOWN"}, False),
+        ({"start_time_utc": None}, False),
+    ],
+)
+def test_schedule_display_preserves_upcoming_eligibility(
+    monkeypatch: pytest.MonkeyPatch, changes: dict[str, object], eligible: bool
+) -> None:
+    from fantasy_gm.domain.schedule import GameState, GameType
+    from fantasy_gm.web.data import schedule_view
+    from tests.test_puckapi_schedule import collect, game
+
+    monkeypatch.setattr("fantasy_gm.providers.puckapi.sleep", lambda _: None)
+    if "state" in changes:
+        changes["state"] = GameState(str(changes["state"]))
+    if "game_type" in changes:
+        changes["game_type"] = GameType(str(changes["game_type"]))
+    snapshot, _ = collect([game()])
+    snapshot = snapshot.model_copy(
+        update={"games": (snapshot.games[0].model_copy(update=changes),)}
+    )
+    view = schedule_view(snapshot, date(2026, 10, 20), date(2026, 10, 22))
+    games = [g for day in view["days"] for g in day["games"]]
+    if changes.get("start_time_utc", True) is None:
+        assert not games
+        assert view["teams"][1]["unplaced"] == 1  # BOS, then TOR
+    else:
+        assert games[0]["upcomingEligible"] is eligible
+        assert games[0]["time"] == "2026-10-21T00:00:00+00:00"
+        assert view["days"][0]["games"]  # Toronto Oct 20, not UTC Oct 21
+        assert view["days"][0]["count"]["state"] != "verified"
+
+
 @pytest.fixture
 def client(tmp_path: Path) -> Iterator[TestClient]:
     (tmp_path / "index.html").write_text("demo", encoding="utf-8")

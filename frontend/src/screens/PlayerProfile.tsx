@@ -1,5 +1,5 @@
 import { dateLabel } from '../view-model';
-import { isObservation } from '../api';
+import { isObservation, joinedTeamGames, upcomingObservedGames } from '../api';
 import { useState } from 'react';
 import type { ScreenProps } from '../application';
 import { Button, DataValue, Panel, TeamMark } from '../components/primitives';
@@ -30,8 +30,8 @@ export default function PlayerProfile({
     );
   const photo = getPlayerPhoto(player.nhlId, player.name);
   const games =
-    player.scheduleJoin === 'unverified'
-      ? []
+    observed && local?.view
+      ? joinedTeamGames(player, upcomingObservedGames(local.view))
       : days.flatMap((day) =>
           day.games
             .filter((game) => game.away === player.team || game.home === player.team)
@@ -272,7 +272,7 @@ export default function PlayerProfile({
         <div className="profile-right">
           <Panel className="profile-upcoming">
             <div className="section-toolbar">
-              <h2>Upcoming Games</h2>
+              <h2>{observed ? 'Upcoming Observed Team Games' : 'Upcoming Games'}</h2>
               <Button onClick={() => onNavigate('planner')}>View Schedule →</Button>
             </div>
             <p className="muted">
@@ -280,6 +280,16 @@ export default function PlayerProfile({
                 ? 'Observed team schedule · affiliation and coverage unverified'
                 : 'Synthetic team schedule · no confirmed appearances'}
             </p>
+            {observed && (
+              <>
+                <p>{player.nextGameNote}</p>
+                <p className="muted">
+                  Loaded window: {local?.view?.schedule?.start ?? 'Unavailable'} –{' '}
+                  {local?.view?.schedule?.end ?? 'Unavailable'} · America/Toronto. Source observed
+                  at {local?.view?.schedule?.observedAt ?? 'Unavailable'}.
+                </p>
+              </>
+            )}
             {games.length ? (
               games.map((game) => (
                 <div className="profile-game" key={game.id}>

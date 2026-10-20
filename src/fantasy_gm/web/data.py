@@ -52,6 +52,12 @@ def schedule_view(snapshot: ScheduleSnapshot, start: date, end: date) -> dict[st
                         if game.start_time_utc is not None
                         else None,
                         "state": game.state.value,
+                        "upcomingEligible": (
+                            game.schedule_normal
+                            and game.state == GameState.SCHEDULED
+                            and game.game_type == GameType.REGULAR
+                            and game.start_time_utc is not None
+                        ),
                     }
                     for game in games.values()
                 ],

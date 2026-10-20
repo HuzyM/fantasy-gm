@@ -1,4 +1,5 @@
-import type { DaySchedule, Player } from './view-model';
+import type { DaySchedule, Game, Player } from './view-model';
+import { dateLabel } from './view-model';
 import { daysForWeek } from './fixtures/overview';
 
 export interface LocalView {
@@ -80,7 +81,7 @@ function date(value: unknown): string {
 function time(value: unknown, timezone: string): string {
   if (value === null) return 'Time unknown';
   const result = string(value);
-  if (!Number.isFinite(Date.parse(result))) return fail();
+  if (!/(Z|\+00:00)$/.test(result) || !Number.isFinite(Date.parse(result))) return fail();
   return new Intl.DateTimeFormat('en-US', {
     hour: 'numeric',
     minute: '2-digit',
@@ -169,6 +170,9 @@ export function parseView(value: unknown): LocalView {
                   home: string(game.home),
                   time: time(game.time, timezone),
                   state: string(game.state),
+                  startTimeUtc: game.time === null ? undefined : string(game.time),
+                  upcomingEligible:
+                    game.upcomingEligible === undefined ? false : bool(game.upcomingEligible),
                 };
               }),
             };
@@ -204,7 +208,35 @@ export function scheduleDays(start: string, view?: LocalView | null): readonly D
     );
   });
 }
-export function providerPlayers(view: LocalView): readonly Player[] {
+/** Earliest usable observations only: never a complete schedule or a player appearance. */
+export function upcomingObservedGames(view: LocalView, asOf = Date.now()) {
+  const schedule = view.schedule;
+  if (!schedule || !Number.isFinite(asOf)) return [];
+  const games = schedule.days
+    .filter((day) => day.date >= schedule.start && day.date <= schedule.end)
+    .flatMap((day) =>
+      day.games
+        .filter(
+          (game) =>
+            game.upcomingEligible === true &&
+            game.state === 'SCHEDULED' &&
+            game.startTimeUtc !== undefined &&
+            Date.parse(game.startTimeUtc) >= asOf,
+        )
+        .map((game) => ({ ...game, date: day.date })),
+    );
+  return [...new Map(games.map((game) => [game.id, game])).values()].sort(
+    (a, b) => Date.parse(a.startTimeUtc!) - Date.parse(b.startTimeUtc!) || a.id.localeCompare(b.id),
+  );
+}
+
+export function joinedTeamGames<T extends Game>(player: Player, games: readonly T[]): T[] {
+  if (player.scheduleJoin !== 'matched') return [];
+  return games.filter((game) => game.away === player.team || game.home === player.team);
+}
+
+export function providerPlayers(view: LocalView, asOf = Date.now()): readonly Player[] {
+  const upcoming = upcomingObservedGames(view, asOf);
   return (view.roster?.entries ?? []).map((entry) => {
     const positions = entry.positions ?? [];
     const categories = [
@@ -212,7 +244,7 @@ export function providerPlayers(view: LocalView): readonly Player[] {
       ...(positions.includes('D') ? ['defense'] : []),
       ...(positions.includes('G') ? ['goalies'] : []),
     ];
-    return {
+    const player: Player = {
       id: entry.id,
       identitySource: 'yahoo',
       scheduleJoin:
@@ -227,11 +259,25 @@ export function providerPlayers(view: LocalView): readonly Player[] {
         entry.slot === null
           ? { state: 'unknown', reason: 'No slot supplied.' }
           : { state: 'verified', value: entry.slot },
-      nextGame: 'Unknown',
+      nextGame: view.schedule ? 'Unknown' : 'Unavailable',
       injury: { state: 'unknown', reason: 'Injury reports are not supplied by this adapter.' },
       weeklyPoints: { state: 'unsupported', reason: 'No performance source connected.' },
       average: { state: 'unsupported', reason: 'No performance source connected.' },
       stats: [],
+    };
+    const next = joinedTeamGames(player, upcoming)[0];
+    return {
+      ...player,
+      nextGame: next
+        ? `${next.home === player.team ? 'vs' : '@'} ${next.home === player.team ? next.away : next.home} · ${dateLabel(next.date, { month: 'short', day: 'numeric' })}, ${next.time} ET`
+        : player.nextGame,
+      nextGameNote: !view.schedule
+        ? 'No schedule observation loaded.'
+        : player.scheduleJoin !== 'matched'
+          ? `Reported affiliation cannot support a schedule join (${entry.scheduleStatus}).`
+          : next
+            ? 'Earliest eligible observation in the loaded window; coverage and affiliation may be incomplete or stale. Appearance unconfirmed.'
+            : 'No eligible upcoming team game observed in the loaded window. This does not establish an off-day.',
     };
   });
 }

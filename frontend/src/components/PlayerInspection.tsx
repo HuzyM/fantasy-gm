@@ -92,13 +92,15 @@ export function PlayerInspection({
           <>
             <div className="player-highlights">
               <div className="highlight-card">
-                <small>NEXT TEAM GAME</small>
+                <small>{isDemo ? 'NEXT TEAM GAME' : 'NEXT OBSERVED TEAM GAME'}</small>
                 <div className="next-game-highlight">
                   <TeamMark code={player.team} large />
-                  <strong>{referenceWeek ? player.nextGame.split(' · ')[0] : 'Unknown'}</strong>
+                  <strong>
+                    {!isDemo || referenceWeek ? player.nextGame.split(' · ')[0] : 'Unknown'}
+                  </strong>
                 </div>
                 <span>
-                  {referenceWeek
+                  {!isDemo || referenceWeek
                     ? player.nextGame.split(' · ')[1]
                     : 'No fixture schedule for this week'}
                 </span>
@@ -113,6 +115,7 @@ export function PlayerInspection({
                 </span>
               </div>
             </div>
+            {!isDemo && <p className="muted">{player.nextGameNote}</p>}
             <p className="stat-caption">
               {isDemo ? '2026–27 DEMO SEASON' : 'REPORTED PLAYER'} /{' '}
               {player.group === 'goalies' ? 'GOALIE' : 'SKATER'}
@@ -146,7 +149,12 @@ export function PlayerInspection({
           <div className="detail-message">
             <CalendarDays />
             <h4>Reported team schedule</h4>
-            <p>{referenceWeek ? player.nextGame : 'Unknown — this week has no loaded fixture.'}</p>
+            <p>
+              {!isDemo || referenceWeek
+                ? player.nextGame
+                : 'Unknown — this week has no loaded fixture.'}
+            </p>
+            {!isDemo && <p>{player.nextGameNote}</p>}
             <p>
               Team games do not guarantee player appearances.{' '}
               {isDemo

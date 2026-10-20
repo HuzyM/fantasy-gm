@@ -86,6 +86,15 @@ export default function MyRoster({ search, players, onNavigate, onNotice, local 
           ? 'Reported local roster · total, effective coverage, injuries and performance unknown · read-only'
           : 'Synthetic roster and statistics · real-player injury reports unknown · read-only'}
       </p>
+      {observed && local?.view?.schedule && (
+        <p className="source-banner">
+          Observed team-game window: {local.view.schedule.start} – {local.view.schedule.end}
+          {' · '}
+          {local.view.schedule.timezone}. Source observed at {local.view.schedule.observedAt}.{' '}
+          Coverage may be incomplete. Reported affiliations may be stale; appearances are
+          unconfirmed.
+        </p>
+      )}
       <div className={`roster-layout ${player ? '' : 'inspection-closed'}`}>
         <div className="roster-main">
           <Panel className="roster-summary">

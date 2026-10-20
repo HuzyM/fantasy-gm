@@ -532,3 +532,10 @@ summary:focus-visible {
     gap: 8px;
   }
 }
+.observed-game-note {
+  display: block;
+  max-width: 28ch;
+  white-space: normal;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
