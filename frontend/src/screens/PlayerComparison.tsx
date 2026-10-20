@@ -1,13 +1,14 @@
 import { isObservation } from '../api';
-import { ArrowLeftRight, ArrowRight, ChartNoAxesCombined, CalendarDays } from 'lucide-react';
+import { ArrowLeftRight, ArrowRight, ChartNoAxesCombined } from 'lucide-react';
 import { useState } from 'react';
 import type { ScreenProps } from '../application';
 import { PlayerHeadshot } from '../components/PlayerHeadshot';
 import { Button, DataValue, Panel, TeamMark } from '../components/primitives';
 import { Tabs } from '../components/Tabs';
 import { overviewFixture } from '../fixtures/overview';
-import type { Datum, Player, DaySchedule } from '../view-model';
-import { dateLabel } from '../view-model';
+import { torontoDate } from '../schedule-observations';
+import { ComparisonWeek } from '../components/ComparisonWeek';
+import type { Datum, Player } from '../view-model';
 import { getPlayerPhoto, teamAssets } from '../media';
 import '../planner-comparison.css';
 
@@ -60,7 +61,7 @@ function PlayerCard({
           <span>{teamAssets[player.team]?.name ?? player.team}</span>
         </div>
         <span className="comparison-badge">
-          {player.identitySource === 'yahoo' ? 'Reported roster' : 'Roster fixture'} ·{' '}
+          {player.identitySource === 'yahoo' ? 'Reported roster' : 'Synthetic roster'} ·{' '}
           {player.position}
         </span>
         <p>
@@ -145,58 +146,15 @@ function Statistics({
   );
 }
 
-function Upcoming({
-  player,
-  days = overviewFixture.days,
-}: {
-  player: Player;
-  days?: readonly DaySchedule[];
-}) {
-  const games =
-    player.scheduleJoin === 'unverified'
-      ? []
-      : days.flatMap((day) =>
-          day.games
-            .filter((game) => game.away === player.team || game.home === player.team)
-            .map((game) => ({ ...game, date: day.date })),
-        );
-  return (
-    <div>
-      <h3>
-        {player.name} ({player.team})
-      </h3>
-      <ul>
-        {games.slice(0, 5).map((game) => {
-          const away = game.away === player.team;
-          const opponent = away ? game.home : game.away;
-          return (
-            <li key={game.id}>
-              <time dateTime={game.date}>
-                {dateLabel(game.date, { weekday: 'short', month: 'short', day: 'numeric' })}
-              </time>
-              <span>
-                <TeamMark code={opponent} />
-                {away ? '@' : 'vs'} {opponent}
-              </span>
-              <time>{game.time}</time>
-            </li>
-          );
-        })}
-      </ul>
-      {games.length === 0 && <p>No team fixtures supplied. Coverage unknown.</p>}
-    </div>
-  );
-}
-
 export default function PlayerComparison({
   search,
   players,
   onNavigate,
   selectedId,
   local,
-}: ScreenProps & { selectedId?: string }) {
+  comparisonStart,
+}: ScreenProps & { selectedId?: string; comparisonStart?: string }) {
   const observed = isObservation(local?.view);
-  const days = observed ? (local?.view?.schedule?.days ?? []) : overviewFixture.days;
   const initialLeft =
     players.find((player) => player.id === selectedId) ??
     players.find((player) => player.nhlId === 8479318) ??
@@ -208,7 +166,13 @@ export default function PlayerComparison({
   const [rightId, setRightId] = useState(initialRight?.id ?? '');
   const [query, setQuery] = useState('');
   const [mode, setMode] = useState<Mode>('totals');
-  const [tab, setTab] = useState('Statistics');
+  const [tab, setTab] = useState(comparisonStart ? 'Schedule' : 'Statistics');
+  const [start, setStart] = useState(
+    comparisonStart ??
+      (observed
+        ? (local?.view?.schedule?.start ?? torontoDate(new Date().toISOString()))
+        : overviewFixture.weekStart),
+  );
   const left = players.find((player) => player.id === leftId) ?? initialLeft;
   const right =
     players.find((player) => player.id === rightId) ??
@@ -291,7 +255,7 @@ export default function PlayerComparison({
         <span className="comparison-provenance">
           {observed
             ? 'Performance unavailable; no provider statistics supplied'
-            : 'Synthetic statistics · supplied fixture sample'}
+            : 'Synthetic statistics · supplied game sample'}
         </span>
       </div>
       {choices.length === 0 && (
@@ -360,21 +324,12 @@ export default function PlayerComparison({
           </div>
         )}
         {tab === 'Schedule' && (
-          <Panel className="comparison-schedule">
-            <h2>
-              <CalendarDays size={20} /> Schedule Comparison
-            </h2>
-            <p>
-              Team fixtures; player appearances are unconfirmed.{' '}
-              {observed
-                ? 'Local observation window; coverage and affiliations unverified.'
-                : 'Synthetic demo week, December 7–13, 2026.'}
-            </p>
-            <div className="comparison-schedule-grid">
-              <Upcoming player={left} days={days} />
-              <Upcoming player={right} days={days} />
-            </div>
-          </Panel>
+          <ComparisonWeek
+            players={[left, right]}
+            local={local}
+            start={start}
+            onStartChange={setStart}
+          />
         )}
         {tab === 'History' && (
           <Panel className="comparison-history">
@@ -390,17 +345,6 @@ export default function PlayerComparison({
         )}
       </div>
       <div className="comparison-bottom">
-        <Panel className="comparison-schedule">
-          <h2>Upcoming Schedule</h2>
-          <p>Supplied team fixtures · ET · appearances unconfirmed</p>
-          <div className="comparison-schedule-grid">
-            <Upcoming player={left} days={days} />
-            <Upcoming player={right} days={days} />
-          </div>
-          <Button onClick={() => onNavigate('planner')}>
-            View full schedule <ArrowRight size={15} />
-          </Button>
-        </Panel>
         <Panel className="comparison-insights">
           <h2>Comparison Context</h2>
           <p>

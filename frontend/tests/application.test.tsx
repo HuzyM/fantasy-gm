@@ -1,10 +1,23 @@
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 import App from '../src/App';
 
 beforeEach(() => window.history.replaceState(null, '', '/'));
 describe('roster and profile navigation', () => {
+  it('carries the exact selected Planner window into the comparison Schedule tab in mounted memory', async () => {
+    window.history.replaceState(null, '', '/#planner');
+    const user = userEvent.setup();
+    render(<App />);
+    fireEvent.change(screen.getByLabelText('Choose date'), { target: { value: '2027-01-01' } });
+    await user.click(screen.getByRole('button', { name: 'Compare players' }));
+    expect(screen.getByRole('tab', { name: 'Schedule' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('region', { name: 'Weekly game comparison' })).toHaveTextContent(
+      'Dec 28 – Jan 3, 2027',
+    );
+    expect(window.location.hash).toBe('#comparison');
+    expect(JSON.stringify(window.history.state)).not.toContain('2026-12-28');
+  });
   it('keeps keyboard skip navigation on the current roster screen', async () => {
     window.history.replaceState(null, '', '/#roster');
     const user = userEvent.setup();

@@ -150,6 +150,13 @@
   font-weight: 600;
 }
 @media (max-width: 600px) {
+  .comparison-kpis:has(.data-value.unsupported),
+  .comparison-kpis:has(.data-value.unknown) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .comparison-kpis strong {
+    overflow-wrap: anywhere;
+  }
   .roster-week-panel {
     padding: 12px;
   }
@@ -868,9 +875,128 @@
 }
 .comparison-bottom {
   display: grid;
-  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 14px;
   margin-top: 14px;
+}
+.comparison-week {
+  padding: 22px;
+  margin-top: 14px;
+}
+.comparison-week h2,
+.comparison-week-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.comparison-week-controls {
+  justify-content: space-between;
+  flex-wrap: wrap;
+  margin: 18px 0;
+}
+.comparison-week p,
+.comparison-week small {
+  color: #c0d2e2;
+  line-height: 1.5;
+  font-size: 13px;
+}
+.comparison-week-summaries {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin: 20px 0;
+}
+.comparison-week-summaries section {
+  background: #0a2435;
+  border: 1px solid #325269;
+  padding: 16px;
+  border-radius: 8px;
+}
+.comparison-week h4 {
+  font-size: 15px;
+  margin: 0 0 12px;
+  overflow-wrap: anywhere;
+}
+.comparison-week dl {
+  margin: 0;
+}
+.comparison-week dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 8px 0;
+}
+.comparison-week dt {
+  font-size: 14px;
+}
+.comparison-week dd {
+  margin: 0;
+  font-weight: 700;
+}
+.comparison-date-row {
+  display: grid;
+  grid-template-columns: minmax(110px, 0.65fr) repeat(2, minmax(0, 1fr));
+  border-top: 1px solid #325269;
+}
+.comparison-date-row > header,
+.comparison-date-player {
+  padding: 18px 14px;
+  min-width: 0;
+}
+.comparison-date-row h3 {
+  font-size: 17px;
+  margin: 0 0 12px;
+}
+.comparison-date-row header > strong {
+  font-size: 13px;
+  color: #8de4ff;
+}
+.comparison-date-player {
+  border-left: 1px solid #325269;
+  overflow-wrap: anywhere;
+}
+.comparison-date-player ul {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+.comparison-date-player li {
+  display: grid;
+  gap: 7px;
+  padding: 12px 0;
+}
+.comparison-date-player li + li {
+  border-top: 1px solid #325269;
+}
+.comparison-date-player > small,
+.comparison-date-player > strong {
+  display: block;
+  margin-top: 10px;
+}
+@media (max-width: 600px) {
+  .comparison-week {
+    padding: 16px;
+  }
+  .comparison-week-summaries,
+  .comparison-date-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .comparison-date-row > header {
+    background: #0a2435;
+  }
+  .comparison-date-player {
+    border-left: 0;
+  }
+  .comparison-date-player + .comparison-date-player {
+    border-top: 1px dashed #325269;
+  }
+  .comparison-week-controls strong {
+    order: -1;
+    width: 100%;
+  }
+  .comparison-week-controls .button {
+    font-size: 12px;
+  }
 }
 .comparison-schedule-grid {
   display: grid;
