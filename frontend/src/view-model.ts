@@ -17,6 +17,8 @@ export interface Game {
   readonly home: string;
   readonly time: string;
   readonly state?: string;
+  readonly startTimeUtc?: string;
+  readonly upcomingEligible?: boolean;
 }
 export interface DaySchedule {
   readonly date: string;
@@ -35,6 +37,7 @@ export interface Player {
   readonly scheduleJoin?: 'matched' | 'unverified';
   readonly rosterSlot: Datum<string>;
   readonly nextGame: string;
+  readonly nextGameNote?: string;
   readonly weeklyPoints: Datum<number>;
   readonly average: Datum<number>;
   readonly injury: Datum<InjuryDesignation>;
