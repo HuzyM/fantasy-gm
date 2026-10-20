@@ -15,7 +15,7 @@ when referring to existing work.
 - Read an issue:
   `gh issue view <number> --repo HuzyM/fantasy-gm --json number,title,body,labels,comments`
 - List issues:
-  `gh issue list --repo HuzyM/fantasy-gm --state open --json number,title,body,labels,comments`
+  `gh issue list --repo HuzyM/fantasy-gm --state open --limit 1000 --json number,title,body,labels,comments`
 - Comment:
   `gh issue comment <number> --repo HuzyM/fantasy-gm --body-file <file>`
 - Apply or remove labels:
@@ -26,6 +26,10 @@ when referring to existing work.
 
 For multiline bodies and comments, write the exact text to a temporary
 file and use `--body-file`.
+
+Issue listings are capped at 1,000 results. If that cap is reached,
+continue with paginated GitHub API queries before treating discovery
+as complete.
 
 Read triage-role mappings from `docs/agents/triage-labels.md`.
 Reuse matching labels without changing their descriptions or colors.
