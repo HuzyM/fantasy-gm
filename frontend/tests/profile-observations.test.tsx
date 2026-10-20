@@ -1,8 +1,11 @@
 import { render, screen } from '@testing-library/react';
-import { expect, it, vi } from 'vitest';
+import { afterEach, expect, it, vi } from 'vitest';
 import PlayerProfile from '../src/screens/PlayerProfile';
 import { parseView, providerPlayers } from '../src/api';
-it('renders the observed October date instead of the demo fixture month', () => {
+afterEach(() => vi.useRealTimers());
+it('renders the upcoming observed October date instead of the demo fixture month', () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date('2026-10-19T12:00:00Z'));
   const view = parseView({
     mode: 'private',
     source: 'yahoo',
@@ -42,6 +45,7 @@ it('renders the observed October date instead of the demo fixture month', () => 
               home: 'STL',
               time: '2026-10-19T23:00:00Z',
               state: 'SCHEDULED',
+              upcomingEligible: true,
             },
           ],
         },

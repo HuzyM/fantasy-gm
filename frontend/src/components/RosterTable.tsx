@@ -107,7 +107,7 @@ export function RosterTable({
               <th scope="col">PLAYER</th>
               <th scope="col">TEAM</th>
               <th scope="col">POS</th>
-              <th scope="col">NEXT TEAM GAME</th>
+              <th scope="col">{isDemo ? 'NEXT TEAM GAME' : 'NEXT OBSERVED TEAM GAME'}</th>
               {detailed &&
                 ['GP', 'G', 'A', 'SOG', 'BLK'].map((label) => (
                   <th scope="col" key={label}>
@@ -155,7 +155,24 @@ export function RosterTable({
                   </span>
                 </td>
                 <td>{player.position}</td>
-                <td className="next-game">{referenceWeek ? player.nextGame : 'Unknown'}</td>
+                <td className="next-game">
+                  {!isDemo ? (
+                    <span title={player.nextGameNote}>
+                      {player.nextGame}
+                      <small className="observed-game-note">
+                        {player.scheduleJoin === 'matched'
+                          ? player.nextGame === 'Unknown'
+                            ? 'No eligible observation · total unknown'
+                            : 'Observed only · appearance unconfirmed'
+                          : 'Schedule or affiliation unavailable'}
+                      </small>
+                    </span>
+                  ) : referenceWeek ? (
+                    player.nextGame
+                  ) : (
+                    'Unknown'
+                  )}
+                </td>
                 {detailed &&
                   ['GP', 'G', 'A', 'SOG', 'BLK'].map((label) => (
                     <td key={label}>
