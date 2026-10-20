@@ -5,17 +5,20 @@ import type { ScreenProps } from '../application';
 import { Button, Panel, TeamMark } from '../components/primitives';
 import { PlayerHeadshot } from '../components/PlayerHeadshot';
 import { Tabs } from '../components/Tabs';
+import { RosterWeek } from '../components/RosterWeek';
 import { daysForWeek, overviewFixture } from '../fixtures/overview';
 import { dateLabel, shiftWeek } from '../view-model';
 import type { Game, Player } from '../view-model';
 import '../planner-comparison.css';
 
 const members = (game: Game, players: readonly Player[]) =>
-  players.filter(
-    (player) =>
-      player.scheduleJoin !== 'unverified' &&
-      (player.team === game.away || player.team === game.home),
-  );
+  game.observationConflict
+    ? []
+    : players.filter(
+        (player) =>
+          player.scheduleJoin !== 'unverified' &&
+          (player.team === game.away || player.team === game.home),
+      );
 
 export default function SchedulePlanner({
   search,
@@ -35,6 +38,7 @@ export default function SchedulePlanner({
   const [filter, setFilter] = useState('all');
   const [highlight, setHighlight] = useState(true);
   const [tab, setTab] = useState('Preview');
+  const [view, setView] = useState('Daily matchups');
   const days = observed ? scheduleDays(start, local?.view) : daysForWeek(start);
   const selectedDay = days.find((day) => day.date === date) ?? days[0]!;
   const query = search.trim().toLocaleLowerCase('en-US');
@@ -115,6 +119,7 @@ export default function SchedulePlanner({
           const matched = players.filter((player) =>
             day.games.some(
               (game) =>
+                !game.observationConflict &&
                 player.scheduleJoin !== 'unverified' &&
                 (player.team === game.away || player.team === game.home),
             ),
@@ -165,247 +170,286 @@ export default function SchedulePlanner({
           );
         })}
       </section>
-      <div className="planner-main">
-        <Panel className="planner-matchups">
-          <div className="planner-table-heading">
-            <h2>
-              <CalendarDays size={23} />
-              {dateLabel(date, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
-            </h2>
-            <div className="planner-filters">
-              <label>
-                Choose date
-                <input
-                  type="date"
-                  value={date}
-                  onChange={(event) => chooseDate(event.target.value)}
-                />
-              </label>
-              <label>
-                Show games
-                <select value={filter} onChange={(event) => setFilter(event.target.value)}>
-                  <option value="all">All games</option>
-                  <option value="rostered">Roster team matches</option>
-                </select>
-              </label>
-              <label className="planner-checkbox">
-                <input
-                  type="checkbox"
-                  checked={highlight}
-                  onChange={(event) => setHighlight(event.target.checked)}
-                />
-                Highlight roster
-              </label>
-            </div>
-          </div>
-          {selectedDay.count.state === 'incomplete' && (
-            <p className="planner-data-note">
-              Partial schedule: observed games only; the total is unknown.
-            </p>
-          )}
-          <div
-            className="planner-table-scroll"
-            role="region"
-            aria-label="Daily matchup table"
-            tabIndex={0}
-          >
-            <table aria-label="Daily matchups">
-              <thead>
-                <tr>
-                  <th scope="col">Time (ET)</th>
-                  <th scope="col">Away</th>
-                  <th scope="col">Home</th>
-                  <th scope="col">Roster team matches</th>
-                  <th scope="col">Matchup</th>
-                </tr>
-              </thead>
-              <tbody>
-                {games.map((game) => {
-                  const matches = members(game, players);
-                  return (
-                    <tr
-                      key={game.id}
-                      className={`${game.id === selectedGame?.id ? 'planner-row-selected' : ''} ${highlight && matches.length ? 'planner-row-rostered' : ''}`}
-                    >
-                      <td>
-                        {game.time}
-                        {observed && <small className="observed-game-note">{game.state}</small>}
-                      </td>
-                      <td>
-                        <div className="planner-team">
-                          <TeamMark code={game.away} />
-                          <b>{game.away}</b>
-                        </div>
-                      </td>
-                      <td>
-                        <div className="planner-team">
-                          <TeamMark code={game.home} />
-                          <b>{game.home}</b>
-                        </div>
-                      </td>
-                      <td>
-                        <div className="planner-roster-inline">
-                          {matches.slice(0, 2).map((player) => (
-                            <span key={player.id}>
-                              <PlayerHeadshot nhlId={player.nhlId} name={player.name} />
-                              <span>
-                                {player.name}
-                                <small>
-                                  {player.position} · {player.team}
-                                </small>
-                              </span>
-                            </span>
-                          ))}
-                          {matches.length > 2 && <b>+{matches.length - 2}</b>}
-                          {!matches.length && (
-                            <span>
-                              {observed && unresolved
-                                ? 'No supported join · affiliation unknown'
-                                : 'No roster team matches'}
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td>
-                        <Button
-                          aria-label={`Select ${game.away} @ ${game.home}`}
-                          aria-pressed={selectedGame?.id === game.id}
-                          onClick={() => {
-                            setGameId(game.id);
-                            setTab('Preview');
-                          }}
-                        >
-                          <span>
-                            {matches.length} roster {matches.length === 1 ? 'match' : 'matches'}
-                          </span>
-                          <ChevronRight size={16} />
-                        </Button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-          {!games.length && (
-            <p className="planner-empty">
-              {unknown
-                ? 'Schedule coverage is unknown for this date.'
-                : 'No matchups match your filters.'}
-            </p>
-          )}
-        </Panel>
-        <aside className="panel planner-detail" aria-label="Selected matchup">
-          {selectedGame ? (
-            <>
-              <h2>
-                {selectedGame.away} @ {selectedGame.home}
-              </h2>
-              <p>
-                {dateLabel(date, { weekday: 'short', month: 'short', day: 'numeric' })} ·{' '}
-                {selectedGame.time} ET
-              </p>
-              <div className="planner-detail-teams">
-                <div>
-                  <TeamMark code={selectedGame.away} large />
-                  <b>{selectedGame.away}</b>
-                </div>
-                <span>@</span>
-                <div>
-                  <TeamMark code={selectedGame.home} large />
-                  <b>{selectedGame.home}</b>
+      <Tabs
+        items={['Daily matchups', 'Roster week'].map((value) => ({ value, label: value }))}
+        value={view}
+        onChange={setView}
+        label="Planner view"
+        idPrefix="planner-view"
+        panelId="planner-view-panel"
+        className="planner-view-tabs"
+      />
+      <div
+        id="planner-view-panel"
+        role="tabpanel"
+        aria-labelledby={`planner-view-${view.replace(' ', '-')}`}
+      >
+        {view === 'Roster week' ? (
+          <RosterWeek
+            start={start}
+            days={observed ? (local?.view?.schedule?.days ?? []) : days}
+            players={players}
+            search={search}
+            observed={observed}
+            observedAt={local?.view?.schedule?.observedAt}
+            loadedWindow={observed ? (local?.view?.schedule ?? undefined) : undefined}
+            onNavigate={onNavigate}
+            onChooseDate={chooseDate}
+          />
+        ) : (
+          <div className="planner-main">
+            <Panel className="planner-matchups">
+              <div className="planner-table-heading">
+                <h2>
+                  <CalendarDays size={23} />
+                  {dateLabel(date, {
+                    weekday: 'long',
+                    month: 'long',
+                    day: 'numeric',
+                    year: 'numeric',
+                  })}
+                </h2>
+                <div className="planner-filters">
+                  <label>
+                    Choose date
+                    <input
+                      type="date"
+                      value={date}
+                      onChange={(event) => chooseDate(event.target.value)}
+                    />
+                  </label>
+                  <label>
+                    Show games
+                    <select value={filter} onChange={(event) => setFilter(event.target.value)}>
+                      <option value="all">All games</option>
+                      <option value="rostered">Roster team matches</option>
+                    </select>
+                  </label>
+                  <label className="planner-checkbox">
+                    <input
+                      type="checkbox"
+                      checked={highlight}
+                      onChange={(event) => setHighlight(event.target.checked)}
+                    />
+                    Highlight roster
+                  </label>
                 </div>
               </div>
-              <Tabs
-                items={['Preview', 'Rostered players', 'Stats'].map((value) => ({
-                  value,
-                  label: value,
-                }))}
-                value={tab}
-                onChange={setTab}
-                label="Matchup detail"
-                className="planner-tabs"
-                idPrefix="planner-detail"
-                panelId="planner-detail-panel"
-              />
+              {selectedDay.count.state === 'incomplete' && (
+                <p className="planner-data-note">
+                  Partial schedule: observed games only; the total is unknown.
+                </p>
+              )}
               <div
-                id="planner-detail-panel"
-                role="tabpanel"
-                aria-labelledby={`planner-detail-${tab.replace(' ', '-')}`}
-                className="planner-detail-panel"
+                className="planner-table-scroll"
+                role="region"
+                aria-label="Daily matchup table"
+                tabIndex={0}
               >
-                {tab === 'Stats' ? (
-                  <>
-                    <h3>Matchup statistics</h3>
-                    <p>
-                      Team records, scoring projections and matchup rankings are unavailable. No
-                      source is connected.
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <h3>
-                      {tab === 'Preview' ? 'Roster coverage' : 'Your roster team matches'} (
-                      {roster.length})
-                    </h3>
-                    <p>
-                      Player appearances are not confirmed. Matching a team does not confirm a
-                      lineup or start.
-                    </p>
-                    <ul>
-                      {roster.map((player) => (
-                        <li key={player.id}>
-                          <PlayerHeadshot nhlId={player.nhlId} name={player.name} />
-                          <div>
-                            <b>{player.name}</b>
-                            <span>
-                              {player.position} · {player.team}
-                            </span>
-                          </div>
-                          <Button
-                            aria-label={`View ${player.name} profile`}
-                            onClick={() => onNavigate('profile', player.id)}
-                          >
-                            <ArrowRight size={16} />
-                          </Button>
-                        </li>
-                      ))}
-                    </ul>
-                    {!roster.length && (
-                      <p>
-                        {observed && unresolved
-                          ? 'No supported roster join. Unverified affiliations do not establish absence.'
-                          : 'No roster players belong to these teams.'}
-                      </p>
-                    )}
-                    {tab === 'Preview' && (
-                      <p className="planner-data-note">
-                        Projected scoring and team trends are unavailable.
-                      </p>
-                    )}
-                  </>
-                )}
+                <table aria-label="Daily matchups">
+                  <thead>
+                    <tr>
+                      <th scope="col">Time (ET)</th>
+                      <th scope="col">Away</th>
+                      <th scope="col">Home</th>
+                      <th scope="col">Roster team matches</th>
+                      <th scope="col">Matchup</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {games.map((game, index) => {
+                      const matches = members(game, players);
+                      return (
+                        <tr
+                          key={`${game.id}-${index}`}
+                          className={`${game.id === selectedGame?.id ? 'planner-row-selected' : ''} ${highlight && matches.length ? 'planner-row-rostered' : ''}`}
+                        >
+                          <td>
+                            {game.time}
+                            {observed && (
+                              <small className="observed-game-note">
+                                {game.observationConflict ? 'Conflicting observation · ' : ''}
+                                {game.state}
+                              </small>
+                            )}
+                          </td>
+                          <td>
+                            <div className="planner-team">
+                              <TeamMark code={game.away} />
+                              <b>{game.away}</b>
+                            </div>
+                          </td>
+                          <td>
+                            <div className="planner-team">
+                              <TeamMark code={game.home} />
+                              <b>{game.home}</b>
+                            </div>
+                          </td>
+                          <td>
+                            <div className="planner-roster-inline">
+                              {matches.slice(0, 2).map((player) => (
+                                <span key={player.id}>
+                                  <PlayerHeadshot nhlId={player.nhlId} name={player.name} />
+                                  <span>
+                                    {player.name}
+                                    <small>
+                                      {player.position} · {player.team}
+                                    </small>
+                                  </span>
+                                </span>
+                              ))}
+                              {matches.length > 2 && <b>+{matches.length - 2}</b>}
+                              {!matches.length && (
+                                <span>
+                                  {observed && unresolved
+                                    ? 'No supported join · affiliation unknown'
+                                    : 'No roster team matches'}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td>
+                            <Button
+                              aria-label={`Select ${game.away} @ ${game.home}`}
+                              aria-pressed={selectedGame?.id === game.id}
+                              onClick={() => {
+                                setGameId(game.id);
+                                setTab('Preview');
+                              }}
+                            >
+                              <span>
+                                {matches.length} roster {matches.length === 1 ? 'match' : 'matches'}
+                              </span>
+                              <ChevronRight size={16} />
+                            </Button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
-              <Button className="planner-detail-action" onClick={() => onNavigate('roster')}>
-                View my roster <ArrowRight size={16} />
-              </Button>
-            </>
-          ) : (
-            <div className="planner-empty">
-              <CalendarDays size={36} />
-              <h2>No matchup selected</h2>
-              <p>
-                {unknown
-                  ? observed
-                    ? local?.view?.schedule
-                      ? 'Return to the loaded observation window. Coverage outside it is unknown.'
-                      : 'No schedule observation was supplied. Load one through a new human-operated launcher session.'
-                    : 'Load the demo week to explore supplied fixtures.'
-                  : 'Change the search or game filter to select a matchup.'}
-              </p>
-            </div>
-          )}
-        </aside>
+              {!games.length && (
+                <p className="planner-empty">
+                  {unknown
+                    ? 'Schedule coverage is unknown for this date.'
+                    : 'No matchups match your filters.'}
+                </p>
+              )}
+            </Panel>
+            <aside className="panel planner-detail" aria-label="Selected matchup">
+              {selectedGame ? (
+                <>
+                  <h2>
+                    {selectedGame.away} @ {selectedGame.home}
+                  </h2>
+                  <p>
+                    {dateLabel(date, { weekday: 'short', month: 'short', day: 'numeric' })} ·{' '}
+                    {selectedGame.time} ET
+                  </p>
+                  <div className="planner-detail-teams">
+                    <div>
+                      <TeamMark code={selectedGame.away} large />
+                      <b>{selectedGame.away}</b>
+                    </div>
+                    <span>@</span>
+                    <div>
+                      <TeamMark code={selectedGame.home} large />
+                      <b>{selectedGame.home}</b>
+                    </div>
+                  </div>
+                  <Tabs
+                    items={['Preview', 'Rostered players', 'Stats'].map((value) => ({
+                      value,
+                      label: value,
+                    }))}
+                    value={tab}
+                    onChange={setTab}
+                    label="Matchup detail"
+                    className="planner-tabs"
+                    idPrefix="planner-detail"
+                    panelId="planner-detail-panel"
+                  />
+                  <div
+                    id="planner-detail-panel"
+                    role="tabpanel"
+                    aria-labelledby={`planner-detail-${tab.replace(' ', '-')}`}
+                    className="planner-detail-panel"
+                  >
+                    {tab === 'Stats' ? (
+                      <>
+                        <h3>Matchup statistics</h3>
+                        <p>
+                          Team records, scoring projections and matchup rankings are unavailable. No
+                          source is connected.
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <h3>
+                          {tab === 'Preview' ? 'Roster coverage' : 'Your roster team matches'} (
+                          {roster.length})
+                        </h3>
+                        <p>
+                          Player appearances are not confirmed. Matching a team does not confirm a
+                          lineup or start.
+                        </p>
+                        <ul>
+                          {roster.map((player) => (
+                            <li key={player.id}>
+                              <PlayerHeadshot nhlId={player.nhlId} name={player.name} />
+                              <div>
+                                <b>{player.name}</b>
+                                <span>
+                                  {player.position} · {player.team}
+                                </span>
+                              </div>
+                              <Button
+                                aria-label={`View ${player.name} profile`}
+                                onClick={() => onNavigate('profile', player.id)}
+                              >
+                                <ArrowRight size={16} />
+                              </Button>
+                            </li>
+                          ))}
+                        </ul>
+                        {!roster.length && (
+                          <p>
+                            {observed && unresolved
+                              ? 'No supported roster join. Unverified affiliations do not establish absence.'
+                              : 'No roster players belong to these teams.'}
+                          </p>
+                        )}
+                        {tab === 'Preview' && (
+                          <p className="planner-data-note">
+                            Projected scoring and team trends are unavailable.
+                          </p>
+                        )}
+                      </>
+                    )}
+                  </div>
+                  <Button className="planner-detail-action" onClick={() => onNavigate('roster')}>
+                    View my roster <ArrowRight size={16} />
+                  </Button>
+                </>
+              ) : (
+                <div className="planner-empty">
+                  <CalendarDays size={36} />
+                  <h2>No matchup selected</h2>
+                  <p>
+                    {unknown
+                      ? observed
+                        ? local?.view?.schedule
+                          ? 'Return to the loaded observation window. Coverage outside it is unknown.'
+                          : 'No schedule observation was supplied. Load one through a new human-operated launcher session.'
+                        : 'Load the demo week to explore supplied fixtures.'
+                      : 'Change the search or game filter to select a matchup.'}
+                  </p>
+                </div>
+              )}
+            </aside>
+          </div>
+        )}
       </div>
       <div className="planner-bottom">
         <Panel className="planner-coverage">
@@ -417,6 +461,7 @@ export default function SchedulePlanner({
               const matches = players.filter((player) =>
                 day.games.some(
                   (game) =>
+                    !game.observationConflict &&
                     player.scheduleJoin !== 'unverified' &&
                     (player.team === game.away || player.team === game.home),
                 ),

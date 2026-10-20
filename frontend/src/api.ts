@@ -1,6 +1,8 @@
-import type { DaySchedule, Game, Player } from './view-model';
+import type { DaySchedule, Player } from './view-model';
 import { dateLabel } from './view-model';
 import { daysForWeek } from './fixtures/overview';
+import { observedFixtures, isEligibleScheduled, joinedTeamGames } from './schedule-observations';
+export { joinedTeamGames } from './schedule-observations';
 
 export interface LocalView {
   mode: 'synthetic' | 'private';
@@ -195,44 +197,48 @@ export function parseView(value: unknown): LocalView {
 export const isObservation = (view?: LocalView | null) => !!view && view.source !== 'synthetic';
 export function scheduleDays(start: string, view?: LocalView | null): readonly DaySchedule[] {
   if (!isObservation(view) && !view) return daysForWeek(start);
+  const schedule = view?.schedule;
+  const fixtures = observedFixtures(schedule?.days ?? []);
   return Array.from({ length: 7 }, (_, i) => {
     const d = new Date(`${start}T12:00:00Z`);
     d.setUTCDate(d.getUTCDate() + i);
     const date = d.toISOString().slice(0, 10);
-    return (
-      view?.schedule?.days.find((day) => day.date === date) ?? {
+    const supplied =
+      schedule && date >= schedule.start && date <= schedule.end
+        ? schedule.days.find((day) => day.date === date)
+        : undefined;
+    return {
+      ...(supplied ?? {
         date,
         games: [],
         count: { state: 'unknown' as const, reason: 'No observation is loaded for this date.' },
-      }
-    );
+      }),
+      games: fixtures
+        .filter(
+          (game) =>
+            game.date === date && schedule && date >= schedule.start && date <= schedule.end,
+        )
+        .map((game) => ({ ...game, observationConflict: game.conflict })),
+    };
   });
 }
 /** Earliest usable observations only: never a complete schedule or a player appearance. */
 export function upcomingObservedGames(view: LocalView, asOf = Date.now()) {
   const schedule = view.schedule;
   if (!schedule || !Number.isFinite(asOf)) return [];
-  const games = schedule.days
-    .filter((day) => day.date >= schedule.start && day.date <= schedule.end)
-    .flatMap((day) =>
-      day.games
-        .filter(
-          (game) =>
-            game.upcomingEligible === true &&
-            game.state === 'SCHEDULED' &&
-            game.startTimeUtc !== undefined &&
-            Date.parse(game.startTimeUtc) >= asOf,
-        )
-        .map((game) => ({ ...game, date: day.date })),
+  return observedFixtures(schedule.days)
+    .filter(
+      (game) =>
+        game.date >= schedule.start &&
+        game.date <= schedule.end &&
+        !game.conflict &&
+        isEligibleScheduled(game) &&
+        Date.parse(game.startTimeUtc!) >= asOf,
+    )
+    .sort(
+      (a, b) =>
+        Date.parse(a.startTimeUtc!) - Date.parse(b.startTimeUtc!) || a.id.localeCompare(b.id),
     );
-  return [...new Map(games.map((game) => [game.id, game])).values()].sort(
-    (a, b) => Date.parse(a.startTimeUtc!) - Date.parse(b.startTimeUtc!) || a.id.localeCompare(b.id),
-  );
-}
-
-export function joinedTeamGames<T extends Game>(player: Player, games: readonly T[]): T[] {
-  if (player.scheduleJoin !== 'matched') return [];
-  return games.filter((game) => game.away === player.team || game.home === player.team);
 }
 
 export function providerPlayers(view: LocalView, asOf = Date.now()): readonly Player[] {

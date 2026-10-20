@@ -19,6 +19,7 @@ export interface Game {
   readonly state?: string;
   readonly startTimeUtc?: string;
   readonly upcomingEligible?: boolean;
+  readonly observationConflict?: boolean;
 }
 export interface DaySchedule {
   readonly date: string;
