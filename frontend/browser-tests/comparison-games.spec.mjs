@@ -67,6 +67,102 @@ const response = (replacement = false) => ({
   },
 });
 
+test('weekly game comparison preserves unavailable source eligibility and excludes unqualified games', async ({
+  page,
+}) => {
+  const observation = response();
+  observation.schedule.days.push(
+    {
+      date: '2026-11-02',
+      count: { state: 'incomplete', value: 2, reason: 'Synthetic partial observation' },
+      games: [
+        {
+          id: 'eligibility-omitted',
+          away: 'BOS',
+          home: 'TOR',
+          time: '2026-11-03T00:00:00Z',
+          state: 'SCHEDULED',
+        },
+        {
+          id: 'second-monday',
+          away: 'NYR',
+          home: 'MTL',
+          time: '2026-11-03T00:00:00Z',
+          state: 'SCHEDULED',
+          upcomingEligible: true,
+        },
+      ],
+    },
+    {
+      date: '2026-11-03',
+      count: { state: 'incomplete', value: 2, reason: 'Synthetic partial observation' },
+      games: [
+        {
+          id: 'eligibility-excluded',
+          away: 'BOS',
+          home: 'TOR',
+          time: '2026-11-04T00:00:00Z',
+          state: 'SCHEDULED',
+          upcomingEligible: false,
+        },
+        {
+          id: 'second-tuesday',
+          away: 'NYR',
+          home: 'MTL',
+          time: '2026-11-04T00:00:00Z',
+          state: 'SCHEDULED',
+          upcomingEligible: true,
+        },
+      ],
+    },
+  );
+  const external = [];
+  await page.route('**/*', (route) => {
+    if (new URL(route.request().url()).origin === 'http://127.0.0.1:4173') return route.continue();
+    external.push(route.request().url());
+    return route.abort();
+  });
+  await page.route('**/api/status', (route) =>
+    route.fulfill({ json: { mode: 'private', yahoo: 'loaded', schedule: 'observed' } }),
+  );
+  await page.route('**/api/view', (route) => route.fulfill({ json: observation }));
+  await page.setViewportSize({ width: 1672, height: 941 });
+  await page.goto('/#access=synthetic-comparison-capability-12345678901234567890');
+  await expect(
+    page.getByRole('button', { name: 'Inspect Invented First', exact: true }),
+  ).toBeVisible();
+  await page.getByRole('button', { name: '04 Compare Players', exact: true }).click();
+  await page.getByRole('tab', { name: 'Schedule', exact: true }).click();
+  const week = page.getByRole('region', { name: 'Weekly game comparison', exact: true });
+  const missing = week.getByRole('group', {
+    name: 'Invented First games on 2026-11-02',
+    exact: true,
+  });
+  const excluded = week.getByRole('group', {
+    name: 'Invented First games on 2026-11-03',
+    exact: true,
+  });
+  await expect(
+    missing.getByText('Scheduled · source eligibility unavailable', { exact: true }),
+  ).toBeVisible();
+  await expect(
+    excluded.getByText('Scheduled · source eligibility excluded', { exact: true }),
+  ).toBeVisible();
+  for (const group of [missing, excluded])
+    await expect(
+      group.getByText('Excluded from scheduled counts and opportunities.', { exact: true }),
+    ).toBeVisible();
+  await expect(
+    week.getByRole('region', { name: 'Invented First game summary', exact: true }).locator('dd'),
+  ).toHaveText(['2', '0']);
+  await expect(
+    week.getByRole('region', { name: 'Invented Second game summary', exact: true }).locator('dd'),
+  ).toHaveText(['4', '2']);
+  await expect(week.getByText('Shared game dates: 1', { exact: true })).toBeVisible();
+  await expect(week.getByText('Shared game date', { exact: true })).toHaveCount(1);
+  expect(external).toEqual([]);
+});
+
 for (const [size, width, height] of [
   ['desktop', 1672, 941],
   ['laptop', 1440, 900],
