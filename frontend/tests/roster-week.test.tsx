@@ -103,6 +103,65 @@ it('does not report daily roster coverage for conflicting fixtures', () => {
     /0.*roster team matches/,
   );
 });
+
+it.each([
+  { label: 'opponent', changes: { away: 'MTL' }, detail: /MTL @ TOR/ },
+  {
+    label: 'time',
+    changes: { startTimeUtc: '2026-10-20T00:00:00Z', time: '8:00 PM' },
+    detail: /8:00 PM/,
+  },
+  { label: 'state', changes: { state: 'CANCELLED' }, detail: /CANCELLED/ },
+  {
+    label: 'eligibility',
+    changes: { upcomingEligible: false },
+    detail: /source scheduled qualification excluded/,
+  },
+])(
+  'selects one conflicting $label variant without presenting arbitrary matchup details',
+  async ({ changes, detail }) => {
+    const user = userEvent.setup();
+    const days = [
+      day('2026-10-19', [
+        game('conflict', '2026-10-19T23:00:00Z'),
+        game('conflict', '2026-10-19T23:00:00Z', changes),
+      ]),
+    ];
+    const view = {
+      mode: 'private',
+      source: 'yahoo',
+      schedule: { start: '2026-10-19', end: '2026-10-25', days, teams: [], issues: [] },
+    } as unknown as LocalView;
+    render(
+      <SchedulePlanner
+        players={[player()]}
+        search=""
+        onNavigate={vi.fn()}
+        onNotice={vi.fn()}
+        local={{ view, state: 'private', disconnect: async () => {} }}
+      />,
+    );
+    const table = screen.getByRole('table', { name: 'Daily matchups' });
+    const choices = within(table).getAllByRole('button', { name: /^Select/ });
+    await user.click(choices[1]!);
+    expect(choices.map((choice) => choice.getAttribute('aria-pressed'))).toEqual(['false', 'true']);
+    const rows = within(table).getAllByRole('row').slice(1);
+    expect(rows[0]).not.toHaveClass('planner-row-selected');
+    expect(rows[1]).toHaveClass('planner-row-selected');
+    const selected = screen.getByRole('complementary', { name: 'Selected matchup' });
+    expect(
+      within(selected).getByRole('heading', { name: 'Conflicting fixture observations' }),
+    ).toBeVisible();
+    expect(within(selected).getByText(detail)).toBeVisible();
+    expect(within(selected).getByText(/player appearances remain unconfirmed/)).toBeVisible();
+    expect(
+      within(selected).queryByRole('tablist', { name: 'Matchup detail' }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(selected).queryByRole('button', { name: /View Invented one profile/ }),
+    ).not.toBeInTheDocument();
+  },
+);
 const game = (id: string, startTimeUtc: string, changes: Partial<Game> = {}): Game => ({
   id,
   startTimeUtc,

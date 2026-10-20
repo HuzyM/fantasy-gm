@@ -20,6 +20,23 @@ const members = (game: Game, players: readonly Player[]) =>
           (player.team === game.away || player.team === game.home),
       );
 
+const selectionKey = (game: Game) =>
+  JSON.stringify([
+    game.id,
+    game.away,
+    game.home,
+    game.startTimeUtc,
+    game.time,
+    game.state,
+    game.upcomingEligible,
+  ]);
+const sourceQualification = (game: Game) =>
+  game.upcomingEligible === true
+    ? 'source scheduled qualification supplied'
+    : game.upcomingEligible === false
+      ? 'source scheduled qualification excluded'
+      : 'source scheduled qualification unavailable';
+
 export default function SchedulePlanner({
   search,
   players,
@@ -34,7 +51,7 @@ export default function SchedulePlanner({
     : overviewFixture.weekStart;
   const [start, setStart] = useState(loadedStart);
   const [date, setDate] = useState(loadedStart);
-  const [gameId, setGameId] = useState('');
+  const [selectedKey, setSelectedKey] = useState('');
   const [filter, setFilter] = useState('all');
   const [highlight, setHighlight] = useState(true);
   const [tab, setTab] = useState('Preview');
@@ -52,7 +69,8 @@ export default function SchedulePlanner({
           .includes(query))
     );
   });
-  const selectedGame = games.find((game) => game.id === gameId) ?? games[0];
+  const selectedGame = games.find((game) => selectionKey(game) === selectedKey) ?? games[0];
+  const activeKey = selectedGame ? selectionKey(selectedGame) : '';
   const roster = selectedGame ? members(selectedGame, players) : [];
   const unknown =
     selectedDay.count.state === 'unknown' || selectedDay.count.state === 'unsupported';
@@ -60,7 +78,7 @@ export default function SchedulePlanner({
     const next = shiftWeek(start, direction);
     setStart(next);
     setDate(next);
-    setGameId('');
+    setSelectedKey('');
   }
   function chooseDate(value: string) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return;
@@ -69,7 +87,7 @@ export default function SchedulePlanner({
     parsed.setUTCDate(parsed.getUTCDate() - ((parsed.getUTCDay() + 6) % 7));
     setStart(parsed.toISOString().slice(0, 10));
     setDate(value);
-    setGameId('');
+    setSelectedKey('');
   }
   return (
     <div className="planner-screen">
@@ -101,7 +119,7 @@ export default function SchedulePlanner({
             onClick={() => {
               setStart(loadedStart);
               setDate(loadedStart);
-              setGameId('');
+              setSelectedKey('');
             }}
           >
             {observed ? 'Loaded window' : 'Demo week'}
@@ -133,7 +151,7 @@ export default function SchedulePlanner({
               aria-pressed={day.date === date}
               onClick={() => {
                 setDate(day.date);
-                setGameId('');
+                setSelectedKey('');
               }}
             >
               <span className="planner-day-name">{dateLabel(day.date, { weekday: 'short' })}</span>
@@ -257,18 +275,21 @@ export default function SchedulePlanner({
                     </tr>
                   </thead>
                   <tbody>
-                    {games.map((game, index) => {
+                    {games.map((game) => {
                       const matches = members(game, players);
+                      const key = selectionKey(game);
                       return (
                         <tr
-                          key={`${game.id}-${index}`}
-                          className={`${game.id === selectedGame?.id ? 'planner-row-selected' : ''} ${highlight && matches.length ? 'planner-row-rostered' : ''}`}
+                          key={key}
+                          className={`${key === activeKey ? 'planner-row-selected' : ''} ${highlight && matches.length ? 'planner-row-rostered' : ''}`}
                         >
                           <td>
                             {game.time}
                             {observed && (
                               <small className="observed-game-note">
-                                {game.observationConflict ? 'Conflicting observation · ' : ''}
+                                {game.observationConflict
+                                  ? `Conflicting observation · ${sourceQualification(game)} · `
+                                  : ''}
                                 {game.state}
                               </small>
                             )}
@@ -301,24 +322,33 @@ export default function SchedulePlanner({
                               {matches.length > 2 && <b>+{matches.length - 2}</b>}
                               {!matches.length && (
                                 <span>
-                                  {observed && unresolved
-                                    ? 'No supported join · affiliation unknown'
-                                    : 'No roster team matches'}
+                                  {game.observationConflict
+                                    ? 'Conflicting observation · coverage unavailable'
+                                    : observed && unresolved
+                                      ? 'No supported join · affiliation unknown'
+                                      : 'No roster team matches'}
                                 </span>
                               )}
                             </div>
                           </td>
                           <td>
                             <Button
-                              aria-label={`Select ${game.away} @ ${game.home}`}
-                              aria-pressed={selectedGame?.id === game.id}
+                              aria-label={`Select ${game.away} @ ${game.home}${game.observationConflict ? `, ${game.time}, ${game.state ?? 'UNKNOWN'}, ${sourceQualification(game)}` : ''}`}
+                              aria-pressed={key === activeKey}
                               onClick={() => {
-                                setGameId(game.id);
+                                setSelectedKey(key);
                                 setTab('Preview');
                               }}
                             >
                               <span>
-                                {matches.length} roster {matches.length === 1 ? 'match' : 'matches'}
+                                {game.observationConflict ? (
+                                  'Coverage unavailable'
+                                ) : (
+                                  <>
+                                    {matches.length} roster{' '}
+                                    {matches.length === 1 ? 'match' : 'matches'}
+                                  </>
+                                )}
                               </span>
                               <ChevronRight size={16} />
                             </Button>
@@ -338,7 +368,21 @@ export default function SchedulePlanner({
               )}
             </Panel>
             <aside className="panel planner-detail" aria-label="Selected matchup">
-              {selectedGame ? (
+              {selectedGame?.observationConflict ? (
+                <div className="planner-empty">
+                  <h2>Conflicting fixture observations</h2>
+                  <p>
+                    Selected observation: {selectedGame.away} @ {selectedGame.home} ·{' '}
+                    {selectedGame.time} ET · {selectedGame.state ?? 'UNKNOWN'} ·{' '}
+                    {sourceQualification(selectedGame)}.
+                  </p>
+                  <p>
+                    Conflicting observations share one fixture ID. Matchup and roster coverage are
+                    unavailable; player appearances remain unconfirmed. No conflicting variant
+                    qualifies for scheduled counts.
+                  </p>
+                </div>
+              ) : selectedGame ? (
                 <>
                   <h2>
                     {selectedGame.away} @ {selectedGame.home}
