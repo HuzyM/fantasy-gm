@@ -174,27 +174,50 @@ it('plan interactions do not extend the existing twenty-minute private lifetime'
     vi.useRealTimers();
   }
 });
-it('does not offer plan or no-action controls without an owned roster', async () => {
-  vi.stubGlobal(
-    'fetch',
-    vi.fn().mockImplementation((url: string) =>
-      Promise.resolve({
-        ok: true,
-        json: async () =>
-          url.endsWith('/status')
-            ? { mode: 'synthetic' }
-            : { ...view, mode: 'synthetic', source: 'puckapi', roster: null, league: null },
-      }),
-    ),
-  );
-  window.history.replaceState(null, '', '/#overview');
+it.each([
+  ['absent', null],
+  ['present', view.roster],
+] as const)(
+  'does not expose private plan affordance or contents in a public PuckAPI session (roster %s)',
+  async (_, roster) => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((url: string) =>
+        Promise.resolve({
+          ok: true,
+          json: async () =>
+            url.endsWith('/status')
+              ? { mode: 'synthetic' }
+              : { ...view, mode: 'synthetic', source: 'puckapi', roster, league: null },
+        }),
+      ),
+    );
+    window.history.replaceState(null, '', '/#overview');
+    const user = userEvent.setup();
+    render(<App />);
+    await screen.findByText('Public NHL schedule');
+    await user.click(screen.getByRole('button', { name: '02 Schedule Planner' }));
+    expect(screen.queryByRole('button', { name: 'Manual plan' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Manual plan' })).not.toBeInTheDocument();
+    expect(screen.queryByText(/Private sessions last 20 minutes/)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Returned player')).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Record no action needed' }),
+    ).not.toBeInTheDocument();
+  },
+);
+it('permits no-action acknowledgement for a private Yahoo session with an empty owned roster', async () => {
+  transport(() => ({ ...view, roster: { ...view.roster, returnedCount: 0, entries: [] } }));
   const user = userEvent.setup();
   render(<App />);
-  await screen.findByText('Public NHL schedule');
-  await openPlan(user);
-  expect(screen.getByText('An owned Yahoo roster is required for a manual plan.')).toBeVisible();
+  await screen.findByText('Fabricated league');
+  const plan = await openPlan(user);
+  expect(
+    within(plan).getByText('No returned owned-roster player is available for a review item.'),
+  ).toBeVisible();
   expect(screen.queryByLabelText('Returned player')).not.toBeInTheDocument();
-  expect(screen.queryByRole('button', { name: 'Record no action needed' })).not.toBeInTheDocument();
+  await user.click(screen.getByRole('button', { name: 'Record no action needed' }));
+  expect(within(plan).getByText('No action needed acknowledged.')).toBeVisible();
 });
 it.each(['response', 'failure'] as const)(
   'a stale private %s cannot restore discarded plan content',
