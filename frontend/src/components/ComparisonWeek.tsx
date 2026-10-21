@@ -55,6 +55,7 @@ export function ComparisonWeek({
           </Button>
         </div>
         <p>
+          {observed && 'America/Toronto · seven inclusive dates. '}
           {observed
             ? `Source observed at ${schedule?.observedAt ?? 'Unavailable'}. Reported affiliations may be stale.`
             : 'Synthetic games · demo observations only.'}{' '}

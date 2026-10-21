@@ -20,6 +20,7 @@ function observation(
   return {
     mode: 'private',
     source: 'yahoo',
+    planningWindow: { start: '2026-11-01', end: '2026-11-07', timezone: 'America/Toronto' },
     provenance: ['Synthetic test only'],
     league: { name: 'Synthetic league', season: 2026 },
     roster: {
@@ -112,6 +113,9 @@ describe('upcoming observed team games', () => {
       'Unavailable',
     );
     raw.schedule.start = '2026-11-02';
+    raw.schedule.end = '2026-11-08';
+    raw.planningWindow.start = '2026-11-02';
+    raw.planningWindow.end = '2026-11-08';
     expect(providerPlayers(parseView(raw), now)[1]!.nextGame).toBe('Unknown');
   });
   it('rejects naive/non-UTC instants and never treats a legacy game as eligible', () => {

@@ -59,10 +59,24 @@ POST operation and only discards local state; it makes no Yahoo write or revocat
 
 ## Optional public schedule observation
 
-A human may add `--public-schedule --interactive` to either launch mode. A separate
-terminal confirmation approves one public PuckAPI load for today through six days
-later in `America/Toronto`. It uses at most two existing provider requests, normally
-six credits. Only the existing `PUCKAPI_API_KEY` configuration is used; no caller-
+A human may add `--public-schedule --interactive` to either launch mode. Before
+public consent, the terminal asks for a planning start in exact `YYYY-MM-DD` form.
+Press Enter to retain the launcher's Toronto-today default, enter another date, or
+type `CANCEL` to stop. The launcher displays the start and end: exactly seven
+consecutive inclusive `America/Toronto` calendar dates, without Monday realignment
+or a Yahoo matchup-week inference. Calendar arithmetic retains those dates across
+both DST changes and month/year boundaries. For example, December 31 through
+January 6 is valid within one season. Dates must remain within the July–June season
+derived from the start; a private session must also match its discovered league
+season. Missing/unsupported season or invalid date input ends startup before the
+dependent public request; it does not silently choose another window.
+
+A separate terminal confirmation then approves one public PuckAPI load for that
+window. Read its request/cost explanation before typing `APPROVE PUBLIC SCHEDULE`.
+It uses at most two existing provider requests, normally six credits at the
+reviewed rates. This is an estimate, not a checked account balance. There is no
+balance lookup, purchase, fan-out, automatic retry or refresh. Refusing consent
+makes no dependent public request. Only the existing `PUCKAPI_API_KEY` configuration is used; no caller-
 provided URLs or Yahoo identities are sent. There is no API-triggered refresh.
 No live public or private provider request is part of automated verification.
 
@@ -71,6 +85,32 @@ coverage remains unknown; observed counts are not verified totals; unplaced and
 uncertain games and incomplete back-to-back coverage remain explicit. Team games
 do not prove player appearances. A failed startup load ends the launch without
 substituting a fabricated observation.
+
+Private Yahoo-only mode also asks for the planning start and retains the same
+explicit window while schedule observations and schedule-derived opportunities
+remain unavailable. Public schedule-only mode supplies no owned roster. Neither
+mode borrows synthetic observations or establishes acceptance of the full journey.
+
+In Planner, review the exact planning dates and timezone, then inspect Daily
+matchups or the existing Roster week matrix. Compare players opens the same
+displayed seven-date window; observed-player Comparison defaults to Schedule.
+Zero or one returned player cannot create a comparison pair. Performance, injury
+reports and confirmed appearances remain unavailable without their own sources.
+Date/week controls only browse the observations already held in memory. Chosen
+non-Monday starts stay exact in observed mode; unloaded dates stay unknown and
+an empty observation is not a confirmed off-day. Return to Loaded window (or the
+Yahoo-only planning window) to review the launcher's original dates. To load a
+different public window, stop and start a new human launcher session, choose its
+start and separately confirm the load. Browser assets, local API reads, browsing
+and comparisons make no provider request.
+
+This slice establishes a planning-window contract and inspection only. It adds no
+manual plan or Yahoo writes. Synthetic verification cannot establish live provider
+compatibility, human correctness, usefulness or full v1.0 acceptance. Any private
+correctness/usefulness session still needs separate authorization and the human-only
+privacy precautions above; do not share private observations, screenshots or links
+with AI/recording tools. Existing session expiry, reload loss and clearing rules
+continue to apply.
 
 ## Request boundary and verification
 

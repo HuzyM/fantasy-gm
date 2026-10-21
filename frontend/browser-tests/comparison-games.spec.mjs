@@ -308,7 +308,7 @@ for (const [size, width, height] of [
       'aria-selected',
       'true',
     );
-    await expect(week.getByText('Nov 9 – Nov 15, 2026', { exact: true })).toBeVisible();
+    await expect(week.getByText('Nov 12 – Nov 18, 2026', { exact: true })).toBeVisible();
     expect(new URL(page.url()).hash).toBe('#comparison');
     const history = JSON.stringify(await page.evaluate(() => window.recordedHistory));
     for (const privateValue of ['Invented', 'invented-', 'TOR', 'MTL', '2026-11-', 'capability'])
@@ -322,7 +322,7 @@ for (const [size, width, height] of [
     await expect(
       page.getByRole('button', { name: 'View Replacement First profile', exact: true }),
     ).toBeVisible();
-    await expect(page.getByRole('tab', { name: 'Statistics', exact: true })).toHaveAttribute(
+    await expect(page.getByRole('tab', { name: 'Schedule', exact: true })).toHaveAttribute(
       'aria-selected',
       'true',
     );
@@ -330,7 +330,7 @@ for (const [size, width, height] of [
     await expect(week.getByText('Nov 1 – Nov 7, 2026', { exact: true })).toBeVisible();
     await page.goBack();
     await page.goForward();
-    await expect(page.getByRole('tab', { name: 'Statistics', exact: true })).toHaveAttribute(
+    await expect(page.getByRole('tab', { name: 'Schedule', exact: true })).toHaveAttribute(
       'aria-selected',
       'true',
     );
