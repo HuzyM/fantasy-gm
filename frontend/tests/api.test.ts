@@ -3,6 +3,7 @@ import { parseView, providerPlayers, scheduleDays } from '../src/api';
 const response = () => ({
   mode: 'private',
   source: 'yahoo',
+  planningWindow: { start: '2026-10-19', end: '2026-10-25', timezone: 'America/Toronto' },
   provenance: ['Reported roster; coverage unverified'],
   league: { name: 'Synthetic test league', season: 2026 },
   roster: {
@@ -26,6 +27,19 @@ const response = () => ({
   schedule: null,
 });
 describe('local display adapter', () => {
+  it.each([
+    { start: '2026-02-30', end: '2026-03-08', timezone: 'America/Toronto' },
+    { start: '2026-12-31', end: '2027-01-07', timezone: 'America/Toronto' },
+    { start: '2026-12-31', end: '2027-01-05', timezone: 'America/Toronto' },
+    { start: '2026-12-31', end: '2027-01-06', timezone: 'Asia/Tokyo' },
+  ])(
+    'rejects malformed or conflicting planning window %s with a sanitized failure',
+    (planningWindow) => {
+      expect(() => parseView({ ...response(), planningWindow })).toThrow(
+        'Local service response unavailable',
+      );
+    },
+  );
   it('never guesses an NHL photo identity, injury, statistic, number or appearance from a Yahoo name/slot', () => {
     const view = parseView(response());
     const player = providerPlayers(view)[0]!;

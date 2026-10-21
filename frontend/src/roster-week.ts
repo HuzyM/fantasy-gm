@@ -18,6 +18,7 @@ export function selectRosterWeek(
   const fixtures = observedFixtures(days).filter((fixture) => insideLoadedWindow(fixture.date));
   return {
     dates,
+    hasLoadedDates: !observed || (!!loadedWindow && dates.some(insideLoadedWindow)),
     rows: players.map((player) => {
       const cells = dates.map((date) => ({
         date,

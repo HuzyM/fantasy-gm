@@ -1,11 +1,16 @@
 # Two-player weekly game comparison
 
-Open **Compare Players → Schedule** to compare two distinct players from the
-loaded roster. The seven inclusive Toronto calendar dates start at the loaded
-schedule's initial date, or December 7 in the explicitly synthetic demo. Planner's
+Open **Compare Players** to compare two distinct players from the loaded roster;
+observed mode opens **Schedule** by default. The seven inclusive Toronto calendar
+dates start at the explicit launcher planning window, including Yahoo-only mode
+without a schedule, or December 7 in the explicitly synthetic demo. Planner's
 **Compare players** action opens Schedule with its exact selected window. Previous
 and next week move seven calendar dates while retaining the pair. Swaps and player
 changes retain the selected window, including through Statistics and History.
+The human chooses that window before separate public-load consent; see
+[local operation](local-application.md). Yahoo-only opportunities are unavailable;
+zero or one returned player cannot supply a comparison pair. Neither degraded mode
+certifies the full release journey.
 
 Each date shows both reported teams' observed games, opponent, home/away, available
 Toronto start time and status. On mobile, both players stack beneath each date.

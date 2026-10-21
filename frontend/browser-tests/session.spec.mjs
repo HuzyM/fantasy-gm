@@ -3,6 +3,7 @@ import { test, expect } from 'playwright/test';
 const view = {
   mode: 'private',
   source: 'yahoo',
+  planningWindow: { start: '2026-10-19', end: '2026-10-25', timezone: 'America/Toronto' },
   provenance: ['SYNTHETIC PROTOCOL TEST — no real Yahoo information'],
   league: { name: 'Synthetic protocol league', season: 2026 },
   roster: {

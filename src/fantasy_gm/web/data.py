@@ -144,6 +144,11 @@ def private_view(
             ],
         },
         "settings": None,
+        "planningWindow": {
+            "start": start.isoformat(),
+            "end": end.isoformat(),
+            "timezone": TIMEZONE.key,
+        },
         "schedule": schedule_view(snapshot, start, end) if snapshot else None,
     }
 

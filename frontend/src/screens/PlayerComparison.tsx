@@ -6,7 +6,6 @@ import { PlayerHeadshot } from '../components/PlayerHeadshot';
 import { Button, DataValue, Panel, TeamMark } from '../components/primitives';
 import { Tabs } from '../components/Tabs';
 import { overviewFixture } from '../fixtures/overview';
-import { torontoDate } from '../schedule-observations';
 import { ComparisonWeek } from '../components/ComparisonWeek';
 import type { Datum, Player } from '../view-model';
 import { getPlayerPhoto, teamAssets } from '../media';
@@ -166,11 +165,11 @@ export default function PlayerComparison({
   const [rightId, setRightId] = useState(initialRight?.id ?? '');
   const [query, setQuery] = useState('');
   const [mode, setMode] = useState<Mode>('totals');
-  const [tab, setTab] = useState(comparisonStart ? 'Schedule' : 'Statistics');
+  const [tab, setTab] = useState(comparisonStart || observed ? 'Schedule' : 'Statistics');
   const [start, setStart] = useState(
     comparisonStart ??
       (observed
-        ? (local?.view?.schedule?.start ?? torontoDate(new Date().toISOString()))
+        ? (local?.view?.planningWindow?.start ?? local?.view?.schedule?.start ?? '')
         : overviewFixture.weekStart),
   );
   const left = players.find((player) => player.id === leftId) ?? initialLeft;
