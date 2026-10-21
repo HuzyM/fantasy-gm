@@ -121,7 +121,7 @@ describe('Player Comparison', () => {
     await user.click(screen.getByRole('tab', { name: 'Statistics' }));
     await user.keyboard('{ArrowRight}');
     expect(screen.getByRole('tab', { name: 'Schedule' })).toHaveAttribute('aria-selected', 'true');
-    expect(screen.getByText(/Team fixtures; player appearances are unconfirmed/)).toBeVisible();
+    expect(screen.getByText(/Team games; player appearances are unconfirmed/)).toBeVisible();
     rerender(<PlayerComparison {...input} players={[]} />);
     expect(screen.getByText('No players are available to compare.')).toBeVisible();
   });

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { Screen, DisplayPreferences } from './application';
+import type { Screen, ScreenProps, DisplayPreferences } from './application';
 import { AppShell } from './components/AppShell';
 import Overview from './screens/Overview';
 import MyRoster from './screens/MyRoster';
@@ -14,7 +14,14 @@ import './application.css';
 import { useLocalSession } from './useLocalSession';
 import { isObservation, providerPlayers } from './api';
 
-function readRoute(): { screen: Screen; playerId?: string } {
+type Route = {
+  screen: Screen;
+  playerId?: string;
+  comparisonStart?: string;
+  sourceGeneration?: number;
+};
+
+function readRoute(): Route {
   const [screen = '', playerId] = window.location.hash.slice(1).split('/');
   return {
     screen: [
@@ -34,7 +41,13 @@ function readRoute(): { screen: Screen; playerId?: string } {
 export default function App() {
   const local = useLocalSession();
   // History contains opaque keys only; private identities stay in this mounted session.
-  const privateRoutes = useRef(new Map<string, { screen: Screen; playerId: string }>());
+  const privateRoutes = useRef(new Map<string, Route>());
+  const source = JSON.stringify([local.state, local.view]);
+  const sourceContext = useRef({ source, generation: 0 });
+  if (sourceContext.current.source !== source) {
+    sourceContext.current = { source, generation: sourceContext.current.generation + 1 };
+    privateRoutes.current.clear();
+  }
   const [route, setRoute] = useState(readRoute);
   const [search, setSearch] = useState('');
   const [notice, setNotice] = useState('');
@@ -57,7 +70,7 @@ export default function App() {
       window.removeEventListener('popstate', update);
     };
   }, []);
-  function navigate(screen: Screen, playerId?: string) {
+  const navigate: ScreenProps['onNavigate'] = (screen, playerId, context) => {
     if (
       ![
         'overview',
@@ -73,21 +86,27 @@ export default function App() {
       setNotice('This screen is unavailable.');
       return;
     }
-    const privateRouteKey = local.state === 'private' && playerId ? crypto.randomUUID() : null;
-    if (privateRouteKey && playerId)
-      privateRoutes.current.set(privateRouteKey, { screen, playerId });
+    const next: Route = {
+      screen,
+      playerId,
+      comparisonStart: context?.comparisonStart,
+      sourceGeneration: sourceContext.current.generation,
+    };
+    const privateRouteKey =
+      (local.state === 'private' && playerId) || context ? crypto.randomUUID() : null;
+    if (privateRouteKey) privateRoutes.current.set(privateRouteKey, next);
     window.history.pushState(
       privateRouteKey ? { privateRouteKey } : null,
       '',
       `#${screen}${playerId && local.state !== 'private' ? `/${encodeURIComponent(playerId)}` : ''}`,
     );
-    setRoute({ screen, playerId });
+    setRoute(next);
     setSearch('');
     setNotice('');
     requestAnimationFrame(() => document.getElementById('main-content')?.focus());
-  }
+  };
   useEffect(() => {
-    if (local.state !== 'private') privateRoutes.current.clear();
+    if (local.state === 'locked' || local.state === 'loading') privateRoutes.current.clear();
     if (local.state === 'locked') {
       setSearch('');
       setNotice('');
@@ -97,6 +116,10 @@ export default function App() {
         window.history.replaceState(null, '', '#overview');
     }
   }, [local.state]);
+  useEffect(() => {
+    setSearch('');
+    setNotice('');
+  }, [source]);
   const props = {
     search,
     players: isObservation(local.view) ? providerPlayers(local.view!) : overviewFixture.players,
@@ -148,16 +171,39 @@ export default function App() {
         </section>
       ) : (
         <div
-          key={`${local.state}-${route.screen}-${route.playerId ?? ''}`}
+          key={`${sourceContext.current.generation}-${route.screen}-${route.playerId ?? ''}-${route.comparisonStart ?? ''}`}
           className="screen-content"
           data-source={local.state}
         >
           {route.screen === 'overview' && <Overview {...props} />}
           {route.screen === 'roster' && <MyRoster {...props} />}
-          {route.screen === 'profile' && <PlayerProfile {...props} selectedId={route.playerId} />}
+          {route.screen === 'profile' && (
+            <PlayerProfile
+              {...props}
+              selectedId={
+                route.sourceGeneration === undefined ||
+                route.sourceGeneration === sourceContext.current.generation
+                  ? route.playerId
+                  : undefined
+              }
+            />
+          )}
           {route.screen === 'planner' && <SchedulePlanner {...props} />}
           {route.screen === 'comparison' && (
-            <PlayerComparison {...props} selectedId={route.playerId} />
+            <PlayerComparison
+              {...props}
+              comparisonStart={
+                route.sourceGeneration === sourceContext.current.generation
+                  ? route.comparisonStart
+                  : undefined
+              }
+              selectedId={
+                route.sourceGeneration === undefined ||
+                route.sourceGeneration === sourceContext.current.generation
+                  ? route.playerId
+                  : undefined
+              }
+            />
           )}
           {route.screen === 'league' && <League {...props} />}
           {route.screen === 'connections' && <Connections {...props} />}

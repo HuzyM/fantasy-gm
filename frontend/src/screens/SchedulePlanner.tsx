@@ -527,7 +527,7 @@ export default function SchedulePlanner({
           <Button onClick={() => onNavigate('roster')}>
             Review roster <ArrowRight size={16} />
           </Button>
-          <Button onClick={() => onNavigate('comparison')}>
+          <Button onClick={() => onNavigate('comparison', undefined, { comparisonStart: start })}>
             Compare players <ArrowRight size={16} />
           </Button>
           <Button

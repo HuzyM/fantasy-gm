@@ -86,6 +86,20 @@ Separate fabricated-observation captures exercise the matrix; browser assertions
 also bound its sticky player column and verify mobile fixture exposure after
 scrolling, since page-overflow and accessibility checks alone missed that defect.
 
+## Two-player weekly game comparison visual review
+
+The four Comparison baselines were reviewed at 1672, 1440, 768 and 390 pixels
+after the original four images first matched in the same local environment.
+The intentional changes replace the duplicate Upcoming Schedule panel with the
+full-width Comparison Context panel and use games/synthetic-roster wording.
+The new Schedule tab was separately captured and inspected at all four sizes;
+its synthetic browser cases check aligned date rows, mobile stacking, readable
+content, keyboard access, accessibility and cleared navigation context.
+Review environment: Windows 10.0.26200, Chrome 155.0.8059.80, Node 22.15.0,
+Playwright 1.64.1 and bundled fonts 5.3.0. Only the four Comparison images were
+replaced after inspecting actual/expected differences. The other 28 images,
+the 0.005 tolerance and all blocking checks remain unchanged.
+
 ## Advisory dependency audits
 
 Linux Python exports all locked dependency groups excluding the local project,

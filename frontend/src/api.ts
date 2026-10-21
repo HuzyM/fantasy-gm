@@ -174,7 +174,7 @@ export function parseView(value: unknown): LocalView {
                   state: string(game.state),
                   startTimeUtc: game.time === null ? undefined : string(game.time),
                   upcomingEligible:
-                    game.upcomingEligible === undefined ? false : bool(game.upcomingEligible),
+                    game.upcomingEligible === undefined ? undefined : bool(game.upcomingEligible),
                 };
               }),
             };

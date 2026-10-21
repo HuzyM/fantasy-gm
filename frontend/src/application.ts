@@ -14,7 +14,7 @@ export interface ScreenProps {
   local?: LocalSession;
   search: string;
   players: readonly Player[];
-  onNavigate: (screen: Screen, playerId?: string) => void;
+  onNavigate: (screen: Screen, playerId?: string, context?: { comparisonStart: string }) => void;
   onNotice: (message: string) => void;
 }
 export interface DisplayPreferences {
