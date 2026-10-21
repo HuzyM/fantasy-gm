@@ -126,6 +126,7 @@ export function RosterWeek({
           <tbody>
             {week.rows.map((row) => {
               const joined = !observed || row.player.scheduleJoin === 'matched';
+              const opportunitiesKnown = joined && week.hasLoadedDates;
               return (
                 <tr key={row.player.id}>
                   <th scope="row">
@@ -206,12 +207,14 @@ export function RosterWeek({
                     </td>
                   ))}
                   <td className="roster-week-count">
-                    {joined ? row.scheduledCount : 'Unknown'}
-                    {joined && <small>{observed ? 'observed; total unknown' : 'synthetic'}</small>}
+                    {opportunitiesKnown ? row.scheduledCount : 'Unknown'}
+                    {opportunitiesKnown && (
+                      <small>{observed ? 'observed; total unknown' : 'synthetic'}</small>
+                    )}
                   </td>
                   <td className="roster-week-count">
-                    {joined ? row.backToBackPairs : 'Unknown'}
-                    {joined && (
+                    {opportunitiesKnown ? row.backToBackPairs : 'Unknown'}
+                    {opportunitiesKnown && (
                       <small>
                         {row.backToBackPairs === 1 ? 'date pair' : 'date pairs'} observed
                       </small>

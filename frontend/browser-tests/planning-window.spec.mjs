@@ -126,6 +126,19 @@ for (const width of [1672, 390])
       await expect(
         week.getByText(loaded ? 'Coverage unknown' : 'Join unavailable', { exact: true }),
       ).toHaveCount(14);
+      for (const name of ['First', 'Second'])
+        await expect(
+          week
+            .getByRole('region', { name: `Invented ${name} game summary`, exact: true })
+            .locator('dd'),
+        ).toHaveText(['Unknown', 'Unknown']);
+      await expect(week.getByText('Shared game dates: Unknown', { exact: true })).toBeVisible();
+      if (loaded)
+        await expect(
+          week.getByText('No schedule observation loaded for the displayed dates.', {
+            exact: true,
+          }),
+        ).toHaveCount(2);
       await navigate('02 Schedule Planner');
       await expect(page.getByText('Dec 31 – Jan 6, 2027', { exact: true })).toBeVisible();
       await expect(
@@ -157,6 +170,24 @@ for (const width of [1672, 390])
       });
       await page.getByLabel('Choose date', { exact: true }).fill('2027-01-08');
       await expect(page.getByText('Jan 8 – Jan 14, 2027', { exact: true })).toBeVisible();
+      await page.getByRole('tab', { name: 'Roster week', exact: true }).click();
+      for (const name of ['First', 'Second']) {
+        const cells = page
+          .getByRole('row', { name: new RegExp(`Invented ${name}`) })
+          .getByRole('cell');
+        await expect(cells.nth(7)).toHaveText('Unknown');
+        await expect(cells.nth(8)).toHaveText('Unknown');
+      }
+      if (width === 390)
+        await page
+          .getByRole('row', { name: /Invented First/ })
+          .getByRole('cell')
+          .nth(8)
+          .scrollIntoViewIfNeeded();
+      await page.screenshot({
+        path: testInfo.outputPath(`explicit-roster-unloaded-${loaded}-${width}.png`),
+        fullPage: true,
+      });
       await page.getByRole('button', { name: 'Compare players', exact: true }).click();
       await expect(week.getByText('Jan 8 – Jan 14, 2027', { exact: true })).toBeVisible();
       await page.getByRole('tab', { name: 'Statistics', exact: true }).focus();
@@ -207,3 +238,82 @@ for (const count of [0, 1])
     await expect(page.getByText('Auston Matthews', { exact: true })).toHaveCount(0);
     expect(external).toEqual([]);
   });
+
+for (const width of [1672, 390]) {
+  for (const empty of [false, true])
+    test(`aggregate ${empty ? 'empty loaded' : 'overlap partial'} context ${width}`, async ({
+      page,
+    }, testInfo) => {
+      await page.setViewportSize({ width, height: 941 });
+      const view = observation(true);
+      if (empty) view.schedule.days = [];
+      else
+        view.schedule.days.push({
+          date: '2027-01-01',
+          count: { state: 'incomplete', value: 1, reason: 'Fabricated partial coverage' },
+          games: [
+            {
+              id: 'second-day',
+              away: 'MTL',
+              home: 'TOR',
+              time: '2027-01-02T00:30:00Z',
+              state: 'SCHEDULED',
+              upcomingEligible: true,
+            },
+          ],
+        });
+      const { external, api, errors } = await protocol(page, view);
+      async function navigate(name) {
+        if (width < 900)
+          await page.getByRole('button', { name: 'Open navigation', exact: true }).click();
+        await page.getByRole('button', { name, exact: true }).click();
+      }
+      const before = api.length;
+      await navigate('02 Schedule Planner');
+      await page
+        .getByLabel('Choose date', { exact: true })
+        .fill(empty ? '2026-12-31' : '2026-12-30');
+      await page.getByRole('tab', { name: 'Roster week', exact: true }).click();
+      const cells = page.getByRole('row', { name: /Invented First/ }).getByRole('cell');
+      await expect(cells.nth(7)).toHaveText(
+        empty ? '0observed; total unknown' : '2observed; total unknown',
+      );
+      await expect(cells.nth(8)).toHaveText(empty ? '0date pairs observed' : '1date pair observed');
+      if (width === 390) await cells.nth(8).scrollIntoViewIfNeeded();
+      await page.screenshot({
+        path: testInfo.outputPath(`roster-${empty ? 'empty' : 'overlap'}-${width}.png`),
+        fullPage: true,
+      });
+      await page.getByRole('button', { name: 'Compare players', exact: true }).click();
+      const week = page.getByRole('region', { name: 'Weekly game comparison', exact: true });
+      for (const name of ['First', 'Second'])
+        await expect(
+          week
+            .getByRole('region', { name: `Invented ${name} game summary`, exact: true })
+            .locator('dd'),
+        ).toHaveText(empty ? ['0', '0'] : ['2', '1']);
+      await expect(
+        week.getByText(empty ? 'Shared game dates: 0' : 'Shared game dates: 2', { exact: true }),
+      ).toBeVisible();
+      if (empty) await expect(week.getByText('Coverage unknown', { exact: true })).toHaveCount(14);
+      else {
+        await navigate('02 Schedule Planner');
+        await page.getByLabel('Choose date', { exact: true }).fill('2027-01-06');
+        await page.getByRole('button', { name: 'Compare players', exact: true }).click();
+        await expect(
+          week
+            .getByRole('region', { name: 'Invented First game summary', exact: true })
+            .locator('dd'),
+        ).toHaveText(['0', '0']);
+        await expect(week.getByText('Shared game dates: 0', { exact: true })).toBeVisible();
+      }
+      expect(api.length).toBe(before);
+      expect(external).toEqual([]);
+      expect(errors).toEqual([]);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
+      await page.screenshot({
+        path: testInfo.outputPath(`comparison-${empty ? 'empty' : 'overlap'}-${width}.png`),
+        fullPage: true,
+      });
+    });
+}
