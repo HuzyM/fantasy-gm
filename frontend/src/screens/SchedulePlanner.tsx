@@ -47,7 +47,7 @@ export default function SchedulePlanner({
   const observed = isObservation(local?.view);
   const unresolved = players.filter((player) => player.scheduleJoin === 'unverified').length;
   const loadedStart = observed
-    ? (local?.view?.schedule?.start ?? new Date().toISOString().slice(0, 10))
+    ? (local?.view?.planningWindow?.start ?? local?.view?.schedule?.start ?? '')
     : overviewFixture.weekStart;
   const [start, setStart] = useState(loadedStart);
   const [date, setDate] = useState(loadedStart);
@@ -84,8 +84,9 @@ export default function SchedulePlanner({
     if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return;
     const parsed = new Date(`${value}T12:00:00Z`);
     if (Number.isNaN(parsed.getTime())) return;
-    parsed.setUTCDate(parsed.getUTCDate() - ((parsed.getUTCDay() + 6) % 7));
-    setStart(parsed.toISOString().slice(0, 10));
+    if (parsed.toISOString().slice(0, 10) !== value) return;
+    if (!observed) parsed.setUTCDate(parsed.getUTCDate() - ((parsed.getUTCDay() + 6) % 7));
+    setStart(observed ? value : parsed.toISOString().slice(0, 10));
     setDate(value);
     setSelectedKey('');
   }
@@ -122,7 +123,7 @@ export default function SchedulePlanner({
               setSelectedKey('');
             }}
           >
-            {observed ? 'Loaded window' : 'Demo week'}
+            {observed ? (local?.view?.schedule ? 'Loaded window' : 'Planning window') : 'Demo week'}
           </Button>
         </div>
       </header>
@@ -130,6 +131,14 @@ export default function SchedulePlanner({
         {observed ? 'LOCAL PROVIDER OBSERVATION' : 'DEMO · SYNTHETIC DATA'}{' '}
         <span>Team schedules; no confirmed player appearances.</span>
       </p>
+      {observed && (
+        <p className="planner-provenance">
+          Planning window: {loadedStart} –{' '}
+          {local?.view?.planningWindow?.end ?? local?.view?.schedule?.end} · America/Toronto · seven
+          inclusive dates. Viewing other dates makes no provider requests. Another loaded window
+          requires a new explicitly confirmed human launcher load.
+        </p>
+      )}
       <section className="planner-week" aria-label="Planner week">
         {days.map((day) => {
           const countKnown = day.count.state === 'verified' || day.count.state === 'incomplete';
@@ -156,7 +165,7 @@ export default function SchedulePlanner({
             >
               <span className="planner-day-name">{dateLabel(day.date, { weekday: 'short' })}</span>
               <span>{dateLabel(day.date, { month: 'short', day: 'numeric' })}</span>
-              <strong>
+              <strong className={countKnown ? undefined : 'planner-count-unknown'}>
                 {countKnown ? `${count}${day.count.state === 'incomplete' ? '+' : ''}` : 'Unknown'}
               </strong>
               <small>

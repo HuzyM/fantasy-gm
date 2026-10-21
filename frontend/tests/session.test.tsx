@@ -6,6 +6,7 @@ import App from '../src/App';
 const privateResponse = {
   mode: 'private',
   source: 'yahoo',
+  planningWindow: { start: '2026-10-19', end: '2026-10-25', timezone: 'America/Toronto' },
   provenance: ['Synthetic protocol test only'],
   league: { name: 'Synthetic private test league', season: 2026 },
   roster: {
@@ -365,6 +366,7 @@ describe('synthetic tests of private transport boundaries', () => {
       const publicView = (label: string) => ({
         mode: 'synthetic',
         source: 'puckapi',
+        planningWindow: { start: '2026-10-19', end: '2026-10-25', timezone: 'America/Toronto' },
         provenance: [label],
         league: null,
         roster: null,
@@ -414,6 +416,7 @@ describe('synthetic tests of private transport boundaries', () => {
     let currentView = {
       mode: 'synthetic',
       source: from as 'synthetic' | 'puckapi',
+      planningWindow: { start: '2026-10-19', end: '2026-10-25', timezone: 'America/Toronto' },
       provenance: ['Synthetic original observation'],
       league: null,
       roster: null,

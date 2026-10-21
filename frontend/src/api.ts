@@ -8,6 +8,7 @@ export interface LocalView {
   mode: 'synthetic' | 'private';
   source: 'synthetic' | 'yahoo' | 'puckapi';
   provenance: string[];
+  planningWindow?: { start: string; end: string; timezone: string };
   league: { name: string; season: number | null } | null;
   roster: {
     teamName: string;
@@ -108,10 +109,26 @@ export function parseView(value: unknown): LocalView {
   const schedule = raw.schedule === null ? null : record(raw.schedule);
   const timezone = schedule ? string(schedule.timezone) : 'America/Toronto';
   if (timezone !== 'America/Toronto') return fail();
+  const window = raw.planningWindow === undefined ? schedule : record(raw.planningWindow);
+  if (!window && raw.source !== 'synthetic') return fail();
+  const planningWindow = window
+    ? { start: date(window.start), end: date(window.end), timezone: string(window.timezone) }
+    : undefined;
+  if (planningWindow) {
+    const expectedEnd = new Date(`${planningWindow.start}T12:00:00Z`);
+    expectedEnd.setUTCDate(expectedEnd.getUTCDate() + 6);
+    if (
+      planningWindow.timezone !== 'America/Toronto' ||
+      planningWindow.end !== expectedEnd.toISOString().slice(0, 10) ||
+      (schedule && (schedule.start !== planningWindow.start || schedule.end !== planningWindow.end))
+    )
+      return fail();
+  }
   return {
     mode: raw.mode,
     source: raw.source as LocalView['source'],
     provenance: strings(raw.provenance),
+    planningWindow,
     league: league
       ? { name: string(league.name), season: league.season === null ? null : number(league.season) }
       : null,

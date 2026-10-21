@@ -10,7 +10,7 @@ from datetime import date, datetime, timedelta
 import httpx
 import uvicorn
 
-from fantasy_gm.auth import _read_hidden_input
+from fantasy_gm.auth import _read_hidden_input, _read_visible_input
 from fantasy_gm.domain.league import League
 from fantasy_gm.domain.roster import Roster
 from fantasy_gm.domain.schedule import ScheduleSnapshot
@@ -68,24 +68,54 @@ def _schedule_start(now: datetime) -> date:
     return now.astimezone(TIMEZONE).date()
 
 
-def _load_public_schedule() -> tuple[ScheduleSnapshot, date, date]:
+def _choose_window(season: int | None = None) -> tuple[date, date, str]:
+    today = _schedule_start(datetime.now(TIMEZONE))
+    selected = _read_visible_input(
+        f"Planning start YYYY-MM-DD (blank for {today.isoformat()}, CANCEL to stop): "
+    )
+    if selected.upper() == "CANCEL":
+        raise SelectionCancelled()
+    start = date.fromisoformat(selected) if selected else today
+    if selected and selected != start.isoformat():
+        raise ValueError()
+    end = start + timedelta(days=6)
+    year = start.year if start.month >= 7 else start.year - 1
+    if not 1000 <= year < 9999 or (season is not None and year != season):
+        raise ValueError()
+    if end >= date(year + 1, 7, 1):
+        raise ValueError()
+    print(
+        f"Planning window: {start.isoformat()} through {end.isoformat()} inclusive "
+        f"(seven America/Toronto dates), season {year}/{year + 1}. "
+        "This is not a Yahoo matchup week. "
+        "Browser navigation makes no provider requests."
+    )
+    return start, end, f"{year}{year + 1}"
+
+
+def _load_public_schedule(start: date, end: date, season: str) -> ScheduleSnapshot:
     print(
         "Public NHL schedule only: one startup load, at most two PuckAPI requests "
-        "(normally six credits), no retries or browser refresh requests. "
-        "No Yahoo identities are supplied to PuckAPI."
+        "(normally six credits at reviewed rates; estimate, not a checked balance), "
+        "no retries, fan-out, balance lookup, purchases or browser refresh requests. "
+        "No Yahoo identities are supplied to PuckAPI. Another window requires "
+        "a new human launcher load and separate confirmation."
     )
     if _read_hidden_input("Type APPROVE PUBLIC SCHEDULE, or CANCEL: ") != (
         "APPROVE PUBLIC SCHEDULE"
     ):
         raise SelectionCancelled()
-    start = _schedule_start(datetime.now(TIMEZONE))
-    end = start + timedelta(days=6)
-    year = start.year if start.month >= 7 else start.year - 1
     with ScheduleService() as service:
         _, snapshot = service.get_schedule(
-            season=f"{year}{year + 1}", start=start, end=end, timezone=TIMEZONE
+            season=season, start=start, end=end, timezone=TIMEZONE
         )
-    return snapshot, start, end
+    if set(snapshot.issues) - {
+        "COVERAGE_UNVERIFIED",
+        "COHORT_UNVERIFIED",
+        "POSSIBLY_TRUNCATED",
+    }:
+        raise ValueError()
+    return snapshot
 
 
 def _serve(args: argparse.Namespace, session: BrowserSession) -> None:
@@ -135,8 +165,16 @@ def main(argv: Sequence[str] | None = None) -> int:
                 warnings.simplefilter("error")
                 if args.private:
                     league, roster = _load_private()
+                    if (
+                        type(league.season) is not int
+                        or not 1000 <= league.season < 9999
+                    ):
+                        raise ValueError()
+                start, end, season = _choose_window(
+                    league.season if args.private else None
+                )
                 if args.public_schedule:
-                    snapshot, start, end = _load_public_schedule()
+                    snapshot = _load_public_schedule(start, end, season)
                     if args.private:
                         session.load(
                             private_view(league, roster, snapshot, start=start, end=end)
@@ -152,12 +190,17 @@ def main(argv: Sequence[str] | None = None) -> int:
                             "league": None,
                             "roster": None,
                             "settings": None,
+                            "planningWindow": {
+                                "start": start.isoformat(),
+                                "end": end.isoformat(),
+                                "timezone": TIMEZONE.key,
+                            },
                             "schedule": schedule_view(snapshot, start, end),
                         }
                         session.schedule = "observed"
                     del snapshot
                 elif args.private:
-                    session.load(private_view(league, roster))
+                    session.load(private_view(league, roster, start=start, end=end))
                 if args.private:
                     del league, roster
                 _serve(args, session)
