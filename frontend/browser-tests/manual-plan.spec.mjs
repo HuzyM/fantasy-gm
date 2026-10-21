@@ -111,6 +111,7 @@ async function keyboardButton(page, name) {
 async function navigate(page, width, name) {
   if (width < 900) await keyboardButton(page, 'Open navigation');
   await keyboardButton(page, name);
+  await expect(page.getByRole('main')).toBeFocused();
 }
 async function openPlan(page, width) {
   await navigate(page, width, '02 Schedule Planner');
@@ -177,6 +178,7 @@ for (const width of [1672, 1440, 768, 390])
       await page.getByRole('searchbox').fill('hide every player');
       await expect(item.getByText('2027-01-02', { exact: true })).toBeVisible();
       await keyboardButton(page, 'Reopen player for item 1');
+      await expect(page.getByRole('main')).toBeFocused();
       await expect(
         page.getByRole('heading', { name: 'Invented Same Name', level: 1, exact: true }),
       ).toBeVisible();
