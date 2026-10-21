@@ -279,7 +279,31 @@ for (const boundary of [
       ).toBeVisible();
     }
     if (boundary !== 'source replacement') {
-      await page.goto('/#access=fabricated-reopened-capability-12345678901234567890');
+      const reopenedCapability = 'fabricated-reopened-capability-12345678901234567890';
+      let replacementView;
+      if (boundary === 'session replacement') {
+        let captureView;
+        replacementView = new Promise((resolve) => {
+          captureView = resolve;
+        });
+        let captured = false;
+        await page.route('**/api/view', (route) => {
+          if (
+            !captured &&
+            route.request().headers().authorization === `Bearer ${reopenedCapability}`
+          ) {
+            captured = true;
+            captureView(route);
+          } else return route.fallback();
+        });
+      }
+      await page.goto(`/#access=${reopenedCapability}`);
+      if (replacementView) {
+        const heldView = await replacementView;
+        await expect(page.getByRole('heading', { name: 'Loading local session' })).toBeVisible();
+        // Keep the exact original roster/provenance: the new session itself must discard the plan.
+        await heldView.fulfill({ json: observation(false) });
+      }
       await expect(page.locator('.screen-content')).toHaveAttribute('data-source', 'private');
     }
     const plan = await openPlan(page, 1672);
