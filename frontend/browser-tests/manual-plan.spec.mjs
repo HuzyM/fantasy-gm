@@ -111,6 +111,7 @@ async function keyboardButton(page, name) {
 async function navigate(page, width, name) {
   if (width < 900) await keyboardButton(page, 'Open navigation');
   await keyboardButton(page, name);
+  await expect(page.getByRole('main')).toBeFocused();
 }
 async function openPlan(page, width) {
   await navigate(page, width, '02 Schedule Planner');
@@ -177,6 +178,7 @@ for (const width of [1672, 1440, 768, 390])
       await page.getByRole('searchbox').fill('hide every player');
       await expect(item.getByText('2027-01-02', { exact: true })).toBeVisible();
       await keyboardButton(page, 'Reopen player for item 1');
+      await expect(page.getByRole('main')).toBeFocused();
       await expect(
         page.getByRole('heading', { name: 'Invented Same Name', level: 1, exact: true }),
       ).toBeVisible();
@@ -314,6 +316,15 @@ for (const boundary of [
       page.getByText('Invented private reason; no team game asserted', { exact: true }),
     ).toHaveCount(0);
     await page.goForward();
-    await expect(page.getByRole('article')).toHaveCount(0);
+    const planButton = page.getByRole('button', { name: 'Manual plan', exact: true });
+    await expect(planButton).toBeVisible();
+    if ((await planButton.getAttribute('aria-expanded')) !== 'true')
+      await keyboardButton(page, 'Manual plan');
+    await expect(plan).toBeVisible();
+    await expect(plan.getByRole('article')).toHaveCount(0);
+    await expect(plan.getByText('Review pending.', { exact: true })).toBeVisible();
+    await expect(
+      plan.getByText('Invented private reason; no team game asserted', { exact: true }),
+    ).toHaveCount(0);
   });
 }
