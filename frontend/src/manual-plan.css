@@ -1,0 +1,59 @@
+.manual-plan {
+  margin-bottom: 24px;
+  padding: 24px;
+  overflow-wrap: anywhere;
+}
+.manual-plan p {
+  color: var(--muted);
+  line-height: 1.6;
+}
+.manual-plan form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.manual-plan label {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.manual-plan input,
+.manual-plan select,
+.manual-plan textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 10px;
+  background: #111b20;
+  color: #eef4f4;
+  border: 1px solid #62747c;
+  border-radius: 4px;
+  font: inherit;
+}
+.manual-plan textarea {
+  min-height: 86px;
+  resize: vertical;
+}
+.manual-plan textarea:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 3px;
+}
+.manual-plan article {
+  border-top: 1px solid #62747c;
+  padding: 16px 0;
+}
+.manual-plan .button {
+  justify-self: start;
+}
+.manual-plan-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+@media (max-width: 600px) {
+  .manual-plan {
+    padding: 16px;
+  }
+  .manual-plan form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

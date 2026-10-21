@@ -13,6 +13,7 @@ import { overviewFixture } from './fixtures/overview';
 import './application.css';
 import { useLocalSession } from './useLocalSession';
 import { isObservation, providerPlayers } from './api';
+import { ManualPlanProvider } from './components/ManualPlan';
 
 type Route = {
   screen: Screen;
@@ -170,47 +171,49 @@ export default function App() {
           </p>
         </section>
       ) : (
-        <div
-          key={`${sourceContext.current.generation}-${route.screen}-${route.playerId ?? ''}-${route.comparisonStart ?? ''}`}
-          className="screen-content"
-          data-source={local.state}
-        >
-          {route.screen === 'overview' && <Overview {...props} />}
-          {route.screen === 'roster' && <MyRoster {...props} />}
-          {route.screen === 'profile' && (
-            <PlayerProfile
-              {...props}
-              selectedId={
-                route.sourceGeneration === undefined ||
-                route.sourceGeneration === sourceContext.current.generation
-                  ? route.playerId
-                  : undefined
-              }
-            />
-          )}
-          {route.screen === 'planner' && <SchedulePlanner {...props} />}
-          {route.screen === 'comparison' && (
-            <PlayerComparison
-              {...props}
-              comparisonStart={
-                route.sourceGeneration === sourceContext.current.generation
-                  ? route.comparisonStart
-                  : undefined
-              }
-              selectedId={
-                route.sourceGeneration === undefined ||
-                route.sourceGeneration === sourceContext.current.generation
-                  ? route.playerId
-                  : undefined
-              }
-            />
-          )}
-          {route.screen === 'league' && <League {...props} />}
-          {route.screen === 'connections' && <Connections {...props} />}
-          {route.screen === 'settings' && (
-            <Settings {...props} display={display} onDisplayChange={setDisplay} />
-          )}
-        </div>
+        <ManualPlanProvider key={sourceContext.current.generation}>
+          <div
+            key={`${sourceContext.current.generation}-${route.screen}-${route.playerId ?? ''}-${route.comparisonStart ?? ''}`}
+            className="screen-content"
+            data-source={local.state}
+          >
+            {route.screen === 'overview' && <Overview {...props} />}
+            {route.screen === 'roster' && <MyRoster {...props} />}
+            {route.screen === 'profile' && (
+              <PlayerProfile
+                {...props}
+                selectedId={
+                  route.sourceGeneration === undefined ||
+                  route.sourceGeneration === sourceContext.current.generation
+                    ? route.playerId
+                    : undefined
+                }
+              />
+            )}
+            {route.screen === 'planner' && <SchedulePlanner {...props} />}
+            {route.screen === 'comparison' && (
+              <PlayerComparison
+                {...props}
+                comparisonStart={
+                  route.sourceGeneration === sourceContext.current.generation
+                    ? route.comparisonStart
+                    : undefined
+                }
+                selectedId={
+                  route.sourceGeneration === undefined ||
+                  route.sourceGeneration === sourceContext.current.generation
+                    ? route.playerId
+                    : undefined
+                }
+              />
+            )}
+            {route.screen === 'league' && <League {...props} />}
+            {route.screen === 'connections' && <Connections {...props} />}
+            {route.screen === 'settings' && (
+              <Settings {...props} display={display} onDisplayChange={setDisplay} />
+            )}
+          </div>
+        </ManualPlanProvider>
       )}
       {notice && local.state !== 'locked' && local.state !== 'loading' && (
         <div className="notice visible" role="status">
