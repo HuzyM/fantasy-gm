@@ -6,7 +6,7 @@ import { Button, Panel, TeamMark } from '../components/primitives';
 import { PlayerHeadshot } from '../components/PlayerHeadshot';
 import { Tabs } from '../components/Tabs';
 import { RosterWeek } from '../components/RosterWeek';
-import { ManualPlan } from '../components/ManualPlan';
+import { canUseManualPlan, ManualPlan } from '../components/ManualPlan';
 import { daysForWeek, overviewFixture } from '../fixtures/overview';
 import { dateLabel, shiftWeek } from '../view-model';
 import type { Game, Player } from '../view-model';
@@ -141,7 +141,7 @@ export default function SchedulePlanner({
           requires a new explicitly confirmed human launcher load.
         </p>
       )}
-      {observed && (
+      {canUseManualPlan(local) && (
         <>
           <Button
             aria-expanded={showPlan}
