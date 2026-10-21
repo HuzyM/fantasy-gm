@@ -76,26 +76,34 @@ export function ComparisonWeek({
               <dl>
                 <div>
                   <dt>{observed ? 'Observed scheduled games' : 'Synthetic scheduled games'}</dt>
-                  <dd>{joined[index] ? row.scheduledCount : 'Unknown'}</dd>
+                  <dd>{joined[index] && week.hasLoadedDates ? row.scheduledCount : 'Unknown'}</dd>
                 </div>
                 <div>
                   <dt>Back-to-back opportunities</dt>
-                  <dd>{joined[index] ? row.backToBackPairs : 'Unknown'}</dd>
+                  <dd>{joined[index] && week.hasLoadedDates ? row.backToBackPairs : 'Unknown'}</dd>
                 </div>
               </dl>
               <p>
                 {joined[index]
-                  ? 'Loaded observations; complete totals unknown.'
+                  ? week.hasLoadedDates
+                    ? 'Loaded observations; complete totals unknown.'
+                    : 'No schedule observation loaded for the displayed dates.'
                   : 'Reported affiliation unavailable or unverified; schedule join unavailable.'}
               </p>
             </section>
           ))}
         </div>
         <p className="comparison-shared-summary">
-          <strong>Shared game dates: {joined.every(Boolean) ? shared.length : 'Unknown'}</strong> ·{' '}
-          {joined.every(Boolean)
-            ? 'observed; total unknown'
-            : 'Required affiliation join unavailable'}
+          <strong>
+            Shared game dates:{' '}
+            {joined.every(Boolean) && week.hasLoadedDates ? shared.length : 'Unknown'}
+          </strong>{' '}
+          ·{' '}
+          {!joined.every(Boolean)
+            ? 'Required affiliation join unavailable'
+            : week.hasLoadedDates
+              ? 'observed; total unknown'
+              : 'No schedule observation loaded for the displayed dates'}
         </p>
         <div className="comparison-week-dates">
           {week.dates.map((date, dateIndex) => (
