@@ -61,6 +61,11 @@ export default function PlayerProfile({
         </div>
         <div className="profile-identity">
           <h1>{player.name}</h1>
+          {observed && (
+            <p>
+              Returned player reference: <span>{player.id}</span>
+            </p>
+          )}
           <p>
             {player.number === undefined ? 'Number unknown' : `#${player.number}`} &nbsp; | &nbsp;{' '}
             {player.position} &nbsp; | &nbsp;{' '}
