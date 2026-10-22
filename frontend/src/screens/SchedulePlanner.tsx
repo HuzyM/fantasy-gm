@@ -6,6 +6,7 @@ import { Button, Panel, TeamMark } from '../components/primitives';
 import { PlayerHeadshot } from '../components/PlayerHeadshot';
 import { Tabs } from '../components/Tabs';
 import { RosterWeek } from '../components/RosterWeek';
+import { canUseManualPlan, ManualPlan } from '../components/ManualPlan';
 import { daysForWeek, overviewFixture } from '../fixtures/overview';
 import { dateLabel, shiftWeek } from '../view-model';
 import type { Game, Player } from '../view-model';
@@ -56,6 +57,7 @@ export default function SchedulePlanner({
   const [highlight, setHighlight] = useState(true);
   const [tab, setTab] = useState('Preview');
   const [view, setView] = useState('Daily matchups');
+  const [showPlan, setShowPlan] = useState(false);
   const days = observed ? scheduleDays(start, local?.view) : daysForWeek(start);
   const selectedDay = days.find((day) => day.date === date) ?? days[0]!;
   const query = search.trim().toLocaleLowerCase('en-US');
@@ -138,6 +140,20 @@ export default function SchedulePlanner({
           inclusive dates. Viewing other dates makes no provider requests. Another loaded window
           requires a new explicitly confirmed human launcher load.
         </p>
+      )}
+      {canUseManualPlan(local) && (
+        <>
+          <Button
+            aria-expanded={showPlan}
+            aria-controls="manual-plan-panel"
+            onClick={() => setShowPlan(!showPlan)}
+          >
+            Manual plan
+          </Button>
+          <div id="manual-plan-panel" hidden={!showPlan}>
+            {showPlan && <ManualPlan players={players} local={local} onNavigate={onNavigate} />}
+          </div>
+        </>
       )}
       <section className="planner-week" aria-label="Planner week">
         {days.map((day) => {

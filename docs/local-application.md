@@ -104,9 +104,44 @@ different public window, stop and start a new human launcher session, choose its
 start and separately confirm the load. Browser assets, local API reads, browsing
 and comparisons make no provider request.
 
-This slice establishes a planning-window contract and inspection only. It adds no
-manual plan or Yahoo writes. Synthetic verification cannot establish live provider
-compatibility, human correctness, usefulness or full v1.0 acceptance. Any private
+## Single-player manual plan
+
+In Schedule Planner, open **Manual plan**. Read its lifetime and source limits
+before entering anything. With an owned Yahoo roster loaded, choose a returned
+player (the exact returned reference distinguishes matching names), a review date
+inside the launcher's planning window, your review action and your reason. Add the
+item, then use Edit, Mark reviewed/Return to pending, Remove or Reopen player
+context. Editing an item returns it to pending. Reopening shows the same returned
+reference on the player's profile; it does not resolve that Yahoo identity to an
+NHL athlete. Filtering/sorting, profile navigation and browsing other displayed
+weeks retain saved items and their original dates. The form always uses the
+original loaded planning window; browsing an unloaded week does not rebind items
+or create a game. In-progress form edits are discarded when the panel closes or
+the screen changes; added items remain mounted until the session ends.
+
+This is a manager-authored review list, not lineup assignment, slot validation,
+start/sit advice or an operation sent to Yahoo. Reviewed means only human
+acknowledgement, never a source verification or completed Yahoo change. Yahoo-only
+players and unavailable affiliations can receive verification tasks without a
+game. Schedule coverage, reported slots/affiliations and player appearances retain
+their limitations after acknowledgement. **Record no action needed** is a valid
+review outcome even with no items; any pending items remain visible and need their
+own acknowledgement. No minimum item count is required. Public schedule-only use
+has no owned roster and cannot record a manual plan or no-action acknowledgement.
+
+Items and review acknowledgement live only in the mounted page. Nothing is saved
+to the server, browser storage, cookies, URL/history payloads, exports or telemetry.
+Navigation and plan controls request no provider. Complete your work within the
+existing 20-minute private lifetime; plan interaction cannot extend it. Reload
+loses the plan and browser capability. Reopening a still-valid launcher link may
+reload observations but never restores lost items. Disconnect, observed expiry or
+lock, source/session replacement and server restart discard private items and
+acknowledgement; Back/Forward cannot recover them. Clearing occurs when browser
+unavailability is observed, without promises about a suspended browser or physical
+memory erasure. Make any chosen provider changes manually in Yahoo.
+
+Synthetic verification cannot establish live provider compatibility, human
+correctness, usefulness or full v1.0 acceptance. Any private
 correctness/usefulness session still needs separate authorization and the human-only
 privacy precautions above; do not share private observations, screenshots or links
 with AI/recording tools. Existing session expiry, reload loss and clearing rules
