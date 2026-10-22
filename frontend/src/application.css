@@ -114,6 +114,9 @@ summary:focus-visible {
   background: #042036;
   margin: 0 0 12px;
 }
+.returned-player-reference {
+  overflow-wrap: anywhere;
+}
 .roster-main,
 .roster-side {
   min-width: 0;
@@ -289,6 +292,9 @@ summary:focus-visible {
   gap: 14px;
   margin-top: 14px;
   align-items: start;
+}
+.profile-grid.profile-schedule-first {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 .profile-wide,
 .profile-middle,
@@ -470,6 +476,9 @@ summary:focus-visible {
   }
 }
 @media (max-width: 800px) {
+  .profile-grid.profile-schedule-first {
+    grid-template-columns: minmax(0, 1fr);
+  }
   .profile-hero {
     grid-template-columns: 40% 1fr;
   }

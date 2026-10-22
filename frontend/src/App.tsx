@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { Screen, ScreenProps, DisplayPreferences } from './application';
+import type { Screen, ScreenProps, DisplayPreferences, NavigationContext } from './application';
 import { AppShell } from './components/AppShell';
 import Overview from './screens/Overview';
 import MyRoster from './screens/MyRoster';
@@ -15,11 +15,12 @@ import { useLocalSession } from './useLocalSession';
 import { isObservation, providerPlayers } from './api';
 import { ManualPlanProvider } from './components/ManualPlan';
 
-type Route = {
+type Route = NavigationContext & {
   screen: Screen;
   playerId?: string;
   comparisonStart?: string;
   sourceGeneration?: number;
+  navigationKey?: string;
 };
 
 function readRoute(): Route {
@@ -89,12 +90,13 @@ export default function App() {
     }
     const next: Route = {
       screen,
+      navigationKey: crypto.randomUUID(),
       playerId,
-      comparisonStart: context?.comparisonStart,
+      ...context,
       sourceGeneration: sourceContext.current.generation,
     };
     const privateRouteKey =
-      (local.state === 'private' && playerId) || context ? crypto.randomUUID() : null;
+      (local.state === 'private' && playerId) || context ? next.navigationKey : null;
     if (privateRouteKey) privateRoutes.current.set(privateRouteKey, next);
     window.history.pushState(
       privateRouteKey ? { privateRouteKey } : null,
@@ -127,6 +129,12 @@ export default function App() {
     local,
     onNavigate: navigate,
     onNotice: setNotice,
+    selectedId:
+      route.sourceGeneration === undefined ||
+      route.sourceGeneration === sourceContext.current.generation
+        ? route.playerId
+        : undefined,
+    context: route.sourceGeneration === sourceContext.current.generation ? route : undefined,
   };
   return (
     <AppShell
@@ -173,10 +181,16 @@ export default function App() {
       ) : (
         <ManualPlanProvider key={sourceContext.current.generation}>
           <div
-            key={`${sourceContext.current.generation}-${route.screen}-${route.playerId ?? ''}-${route.comparisonStart ?? ''}`}
+            key={`${sourceContext.current.generation}-${route.screen}-${route.playerId ?? ''}-${route.comparisonStart ?? ''}-${route.comparisonRightId ?? ''}-${route.reviewDate ?? ''}-${route.showPlan ?? ''}-${route.navigationKey ?? ''}`}
             className="screen-content"
             data-source={local.state}
           >
+            {props.context?.reviewDate && (
+              <p className="source-banner">
+                Review context: {props.context.reviewDate} · {props.context.comparisonStart} –{' '}
+                {local.view?.planningWindow?.end} · America/Toronto
+              </p>
+            )}
             {route.screen === 'overview' && <Overview {...props} />}
             {route.screen === 'roster' && <MyRoster {...props} />}
             {route.screen === 'profile' && (

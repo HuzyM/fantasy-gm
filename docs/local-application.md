@@ -104,7 +104,31 @@ different public window, stop and start a new human launcher session, choose its
 start and separately confirm the load. Browser assets, local API reads, browsing
 and comparisons make no provider request.
 
-## Single-player manual plan
+## Context reviews and manual plan
+
+Start with **My Roster** and inspect a returned player, then choose **Prepare roster
+review**. In Planner, select a date and **Planner review player**, then **Prepare
+Planner review**. Both paths prefill the exact returned identity and date; a
+verification task needs no supported game association. The action remains yours
+to enter. Review and edit the factual starting reason before adding the item.
+
+Observed-player comparison opens on **Schedule**. Select two distinct returned
+players and a **Comparison review date**, then **Prepare comparison review** to
+record both exact references, the date and original planning window. **Reopen
+review context** or **Reopen comparison context** returns to the item's exact
+player or ordered pair, date and window. Pair swaps, search, filters and navigation
+do not change an existing item. An empty or single-player roster cannot create a
+comparison item. Unavailable performance and competition data do not supply plan
+reasons; the offline demo remains separate from observed planning.
+
+The referenced observation qualifications remain visible separately from your
+editable action and reason. Partial/missing coverage, source issues, excluded or
+disputed games and unplaced observations remain limitations after acknowledgement.
+Shared dates are review prompts, not slot-capacity conflicts. Back-to-back
+opportunities do not confirm appearances or goalie starts. Context preparation is
+unavailable for a different displayed weekly window, including an overlapping
+window: return to the loaded window or perform a new separately confirmed human
+launcher load. No browsing or plan action makes a provider request.
 
 In Schedule Planner, open **Manual plan**. Read its lifetime and source limits
 before entering anything. With an owned Yahoo roster loaded, choose a returned
