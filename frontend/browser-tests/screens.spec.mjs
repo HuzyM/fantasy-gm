@@ -1,3 +1,4 @@
+import { browserOrigin } from '../scripts/browser-server.mjs';
 import { test, expect } from 'playwright/test';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
@@ -47,7 +48,7 @@ for (const route of routes)
         if (message.type() === 'error') errors.push(message.text());
       });
       await page.route('**/*', (r) => {
-        if (new URL(r.request().url()).origin === 'http://127.0.0.1:4173') return r.continue();
+        if (new URL(r.request().url()).origin === browserOrigin) return r.continue();
         external.push(r.request().url());
         return r.abort();
       });

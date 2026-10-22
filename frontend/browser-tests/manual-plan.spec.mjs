@@ -1,4 +1,7 @@
+import { browserOrigin } from '../scripts/browser-server.mjs';
 import { test, expect } from 'playwright/test';
+import { keyboardButton, navigate, openDisclosure } from './helpers/navigation.mjs';
+import { replaceSession } from './helpers/session.mjs';
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
@@ -68,7 +71,7 @@ async function protocol(page, loaded) {
       requests.push({ url: request.url(), body: request.postData() });
   });
   await page.route('**/*', (route) => {
-    if (new URL(route.request().url()).origin === 'http://127.0.0.1:4173') return route.continue();
+    if (new URL(route.request().url()).origin === browserOrigin) return route.continue();
     external.push(route.request().url());
     return route.abort();
   });
@@ -103,20 +106,9 @@ async function protocol(page, loaded) {
     },
   };
 }
-async function keyboardButton(page, name) {
-  const button = page.getByRole('button', { name, exact: true });
-  await button.focus();
-  await page.keyboard.press('Enter');
-}
-async function navigate(page, width, name) {
-  if (width < 900) await keyboardButton(page, 'Open navigation');
-  await keyboardButton(page, name);
-  await expect(page.getByRole('main')).toBeFocused();
-}
 async function openPlan(page, width) {
   await navigate(page, width, '02 Schedule Planner');
-  await keyboardButton(page, 'Manual plan');
-  return page.getByRole('region', { name: 'Manual plan', exact: true });
+  return openDisclosure(page, 'Manual plan');
 }
 async function createItem(page) {
   await page.getByRole('combobox', { name: 'Returned player', exact: true }).focus();
@@ -224,9 +216,7 @@ for (const width of [1672, 1440, 768, 390])
       expect(
         evidence.requests.every(
           ({ url, body }) =>
-            new URL(url).origin === 'http://127.0.0.1:4173' &&
-            !new URL(url).search &&
-            body === null,
+            new URL(url).origin === browserOrigin && !new URL(url).search && body === null,
         ),
       ).toBe(true);
       expect(evidence.external).toEqual([]);
@@ -282,30 +272,10 @@ for (const boundary of [
     }
     if (boundary !== 'source replacement') {
       const reopenedCapability = 'fabricated-reopened-capability-12345678901234567890';
-      let replacementView;
       if (boundary === 'session replacement') {
-        let captureView;
-        replacementView = new Promise((resolve) => {
-          captureView = resolve;
-        });
-        let captured = false;
-        await page.route('**/api/view', (route) => {
-          if (
-            !captured &&
-            route.request().headers().authorization === `Bearer ${reopenedCapability}`
-          ) {
-            captured = true;
-            captureView(route);
-          } else return route.fallback();
-        });
-      }
-      await page.goto(`/#access=${reopenedCapability}`);
-      if (replacementView) {
-        const heldView = await replacementView;
-        await expect(page.getByRole('heading', { name: 'Loading local session' })).toBeVisible();
-        // Keep the exact original roster/provenance: the new session itself must discard the plan.
-        await heldView.fulfill({ json: observation(false) });
-      }
+        // Identical roster/provenance: the replacement session itself must clear the plan.
+        await replaceSession(page, reopenedCapability, observation(false));
+      } else await page.goto(`/#access=${reopenedCapability}`);
       await expect(page.locator('.screen-content')).toHaveAttribute('data-source', 'private');
     }
     const plan = await openPlan(page, 1672);
@@ -316,11 +286,7 @@ for (const boundary of [
       page.getByText('Invented private reason; no team game asserted', { exact: true }),
     ).toHaveCount(0);
     await page.goForward();
-    const planButton = page.getByRole('button', { name: 'Manual plan', exact: true });
-    await expect(planButton).toBeVisible();
-    if ((await planButton.getAttribute('aria-expanded')) !== 'true')
-      await keyboardButton(page, 'Manual plan');
-    await expect(plan).toBeVisible();
+    await openDisclosure(page, 'Manual plan');
     await expect(plan.getByRole('article')).toHaveCount(0);
     await expect(plan.getByText('Review pending.', { exact: true })).toBeVisible();
     await expect(
