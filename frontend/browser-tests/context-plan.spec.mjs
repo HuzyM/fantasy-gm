@@ -1,4 +1,6 @@
 import { test, expect } from 'playwright/test';
+import { browserOrigin } from '../scripts/browser-server.mjs';
+import { keyboardButton as press, navigate, openDisclosure } from './helpers/navigation.mjs';
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
@@ -74,7 +76,7 @@ async function protocol(page, loaded) {
   page.on('console', (message) => logs.push(message.text()));
   page.on('pageerror', (error) => logs.push(error.message));
   await page.route('**/*', (route) => {
-    if (new URL(route.request().url()).origin === 'http://127.0.0.1:4173') return route.continue();
+    if (new URL(route.request().url()).origin === browserOrigin) return route.continue();
     external.push(route.request().url());
     return route.abort();
   });
@@ -97,15 +99,6 @@ async function protocol(page, loaded) {
       current = { ...current, provenance: ['FABRICATED CONTEXT REPLACEMENT'] };
     },
   };
-}
-async function press(page, name) {
-  await page.getByRole('button', { name, exact: true }).focus();
-  await page.keyboard.press('Enter');
-}
-async function navigate(page, width, name) {
-  if (width < 900) await press(page, 'Open navigation');
-  await press(page, name);
-  await expect(page.getByRole('main')).toBeFocused();
 }
 async function save(page, action, reason) {
   await page.getByLabel('Review action', { exact: true }).focus();
@@ -253,7 +246,7 @@ for (const width of [1672, 1440, 768, 390])
         page.getByText(/Context review unavailable for an unloaded alternate window/),
       ).toBeVisible();
       await page.goBack();
-      await expect(page.getByRole('region', { name: 'Manual plan', exact: true })).toBeVisible();
+      await openDisclosure(page, 'Manual plan');
       await expect(pair.getByText('2026-12-31', { exact: true })).toBeVisible();
       await press(page, 'Return item 3 to pending');
       await press(page, 'Reopen context for item 3');
@@ -293,11 +286,16 @@ test('replacing a fabricated source discards pair items and opaque return contex
   evidence.replace();
   await page.evaluate(() => window.dispatchEvent(new Event('focus')));
   await expect(page.getByText('Invented discarded pair', { exact: true })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Manual plan', exact: true })).toBeVisible();
-  await press(page, 'Manual plan');
-  await expect(page.getByRole('article')).toHaveCount(0);
-  await expect(page.getByText('Review pending.', { exact: true })).toBeVisible();
+  let plan = await openDisclosure(page, 'Manual plan');
+  await expect(plan.getByRole('article')).toHaveCount(0);
+  await expect(plan.getByText('Review pending.', { exact: true })).toBeVisible();
+  await expect(plan.getByText('Invented discarded pair', { exact: true })).toHaveCount(0);
+  await expect(plan.getByText('Invented discarded reason', { exact: true })).toHaveCount(0);
   await page.goBack();
-  await expect(page.getByText('Invented discarded pair', { exact: true })).toHaveCount(0);
-  await expect(page.getByText('Invented discarded reason', { exact: true })).toHaveCount(0);
+  await navigate(page, 1672, '02 Schedule Planner');
+  plan = await openDisclosure(page, 'Manual plan');
+  await expect(plan.getByRole('article')).toHaveCount(0);
+  await expect(plan.getByText('Review pending.', { exact: true })).toBeVisible();
+  await expect(plan.getByText('Invented discarded pair', { exact: true })).toHaveCount(0);
+  await expect(plan.getByText('Invented discarded reason', { exact: true })).toHaveCount(0);
 });
