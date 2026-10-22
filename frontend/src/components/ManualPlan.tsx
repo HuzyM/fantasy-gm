@@ -12,6 +12,18 @@ const factualReasons = {
     'Review observed team games and reported assignments; complete coverage and appearances remain unverified.',
 };
 
+function factualReason(
+  players: ScreenProps['players'],
+  local: ScreenProps['local'],
+  qualifications: readonly string[],
+): string {
+  if (!local?.view?.schedule || players.some((player) => player.scheduleJoin !== 'matched'))
+    return factualReasons.unavailable;
+  return qualifications.includes(factualReasons.shared)
+    ? factualReasons.shared
+    : factualReasons.observed;
+}
+
 export function canUseManualPlan(local: ScreenProps['local']): boolean {
   return (
     local?.state === 'private' &&
@@ -113,7 +125,7 @@ function observationQualifications(
       row.cells.find((cell) => cell.date === date)?.fixtures.some((fixture) => fixture.eligible),
     )
   )
-    notes.push('Shared game date observed; review prompt only, not a slot-capacity conflict.');
+    notes.push(factualReasons.shared);
   if (schedule?.issues.length) notes.push(`Source issues: ${schedule.issues.join(' · ')}`);
   return notes;
 }
@@ -153,14 +165,7 @@ export function PreparePlan({
             end: window.end,
             context: origin,
             qualifications,
-            reason:
-              !local?.view?.schedule || players.some((player) => player.scheduleJoin !== 'matched')
-                ? 'Schedule coverage unavailable; verify reported affiliation or assignment in Yahoo.'
-                : qualifications.includes(
-                      'Shared game date observed; review prompt only, not a slot-capacity conflict.',
-                    )
-                  ? 'Shared game date observed; review prompt only, not a slot-capacity conflict.'
-                  : 'Review observed team games and reported assignments; complete coverage and appearances remain unverified.',
+            reason: factualReason(players, local, qualifications),
           });
           onNavigate('planner', undefined, {
             comparisonStart: window.start,
@@ -346,18 +351,11 @@ export function ManualPlan({
                     window.start,
                     next,
                   );
-                  const nextReason =
-                    !local?.view?.schedule ||
-                    prepared.playerIds.some(
-                      (id) =>
-                        players.find((player) => player.id === id)?.scheduleJoin !== 'matched',
-                    )
-                      ? 'Schedule coverage unavailable; verify reported affiliation or assignment in Yahoo.'
-                      : qualifications.includes(
-                            'Shared game date observed; review prompt only, not a slot-capacity conflict.',
-                          )
-                        ? 'Shared game date observed; review prompt only, not a slot-capacity conflict.'
-                        : 'Review observed team games and reported assignments; complete coverage and appearances remain unverified.';
+                  const nextReason = factualReason(
+                    players.filter((player) => prepared.playerIds.includes(player.id)),
+                    local,
+                    qualifications,
+                  );
                   if (reason === prepared.reason && Object.values(factualReasons).includes(reason))
                     setReason(nextReason);
                   setPrepared({ ...prepared, date: next, reason: nextReason });
