@@ -20,6 +20,7 @@ export default function PlayerProfile({
   const player = players.find((p) => p.id === selectedId);
   const [tab, setTab] = useState<(typeof statTabs)[number]>('Season Stats');
   const [period, setPeriod] = useState('10');
+  const [showPerformance, setShowPerformance] = useState(false);
   if (!player)
     return (
       <section className="panel unavailable-profile">
@@ -115,124 +116,146 @@ export default function PlayerProfile({
           )}
         </div>
       </section>
-      <div className="profile-grid">
-        <div className="profile-wide">
-          <Panel className="performance-panel">
-            <div className="section-toolbar">
-              <h2>Recent Performance</h2>
-              <label>
-                Demo games{' '}
-                <select
-                  disabled={observed}
-                  value={period}
-                  onChange={(e) => setPeriod(e.target.value)}
-                >
-                  <option value="10">Last 10</option>
-                  <option value="5">Last 5</option>
-                </select>
-              </label>
-            </div>
-            <p className="muted">
-              {observed
-                ? 'Performance unavailable. No game-log provider is connected.'
-                : 'Illustrative series only; no real game results.'}
-            </p>
-            <div
-              className="performance-chart"
-              role="img"
-              aria-label={
-                observed
-                  ? 'Performance unavailable'
-                  : `Synthetic fantasy points: ${performance.join(', ')}`
-              }
-            >
-              {performance.map((value, i) => (
-                <div className="performance-column" key={i}>
-                  <span>{value}</span>
-                  <div style={{ height: `${value * 5}px` }} />
-                  <small>Demo {i + 1}</small>
+      {observed && (
+        <div className="source-banner">
+          <p>
+            Review the observed schedule and reported roster context. Performance and outlook inputs
+            are unavailable.
+          </p>
+          <Button
+            aria-expanded={showPerformance}
+            onClick={() => setShowPerformance(!showPerformance)}
+          >
+            {showPerformance
+              ? 'Hide unavailable performance panels'
+              : 'Show unavailable performance panels'}
+          </Button>
+        </div>
+      )}
+      <div
+        className={`profile-grid ${observed && !showPerformance ? 'profile-schedule-first' : ''}`}
+      >
+        {(!observed || showPerformance) && (
+          <div className="profile-wide">
+            <Panel className="performance-panel">
+              <div className="section-toolbar">
+                <h2>Recent Performance</h2>
+                <label>
+                  Demo games{' '}
+                  <select
+                    disabled={observed}
+                    value={period}
+                    onChange={(e) => setPeriod(e.target.value)}
+                  >
+                    <option value="10">Last 10</option>
+                    <option value="5">Last 5</option>
+                  </select>
+                </label>
+              </div>
+              <p className="muted">
+                {observed
+                  ? 'Performance unavailable. No game-log provider is connected.'
+                  : 'Illustrative series only; no real game results.'}
+              </p>
+              <div
+                className="performance-chart"
+                role="img"
+                aria-label={
+                  observed
+                    ? 'Performance unavailable'
+                    : `Synthetic fantasy points: ${performance.join(', ')}`
+                }
+              >
+                {performance.map((value, i) => (
+                  <div className="performance-column" key={i}>
+                    <span>{value}</span>
+                    <div style={{ height: `${value * 5}px` }} />
+                    <small>Demo {i + 1}</small>
+                  </div>
+                ))}
+              </div>
+              <details>
+                <summary>Chart data</summary>
+                <p>{performance.join(' · ')}</p>
+              </details>
+            </Panel>
+            <Panel className="profile-season">
+              <Tabs
+                label="Profile statistics"
+                className="inspection-tabs"
+                value={tab}
+                onChange={setTab}
+                idPrefix="profile-stat"
+                panelId="profile-stats"
+                items={statTabs.map((value) => ({ value, label: value }))}
+              />
+              <div
+                id="profile-stats"
+                role="tabpanel"
+                aria-labelledby={`profile-stat-${tab.replace(' ', '-')}`}
+              >
+                {tab === 'Season Stats' ? (
+                  <table>
+                    <caption>
+                      {observed ? 'Performance statistics unavailable' : 'Synthetic season totals'}
+                    </caption>
+                    <thead>
+                      <tr>
+                        <th>Category</th>
+                        <th>Total</th>
+                        <th>Rank</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {player.stats.map((stat) => (
+                        <tr key={stat.label}>
+                          <th scope="row">{stat.label}</th>
+                          <td>
+                            <DataValue datum={stat.datum} />
+                          </td>
+                          <td>Unavailable</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <div className="unavailable-state">
+                    <h3>{tab} unavailable</h3>
+                    <p>
+                      {tab === 'Game Log'
+                        ? 'No game-log provider is connected.'
+                        : 'No verified source supplies this breakdown.'}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </Panel>
+          </div>
+        )}
+        <div className="profile-middle">
+          {(!observed || showPerformance) && (
+            <Panel className="profile-outlook">
+              <h2>Fantasy Outlook</h2>
+              {[
+                'Weekly projection',
+                'Rest of season projection',
+                'Ownership',
+                'Start / sit advice',
+                'Trade value',
+              ].map((label) => (
+                <div className="info-row" key={label}>
+                  <span>{label}</span>
+                  <DataValue
+                    datum={{
+                      state: 'unsupported',
+                      reason: 'No verified projection or advice provider is implemented.',
+                    }}
+                  />
                 </div>
               ))}
-            </div>
-            <details>
-              <summary>Chart data</summary>
-              <p>{performance.join(' · ')}</p>
-            </details>
-          </Panel>
-          <Panel className="profile-season">
-            <Tabs
-              label="Profile statistics"
-              className="inspection-tabs"
-              value={tab}
-              onChange={setTab}
-              idPrefix="profile-stat"
-              panelId="profile-stats"
-              items={statTabs.map((value) => ({ value, label: value }))}
-            />
-            <div
-              id="profile-stats"
-              role="tabpanel"
-              aria-labelledby={`profile-stat-${tab.replace(' ', '-')}`}
-            >
-              {tab === 'Season Stats' ? (
-                <table>
-                  <caption>
-                    {observed ? 'Performance statistics unavailable' : 'Synthetic season totals'}
-                  </caption>
-                  <thead>
-                    <tr>
-                      <th>Category</th>
-                      <th>Total</th>
-                      <th>Rank</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {player.stats.map((stat) => (
-                      <tr key={stat.label}>
-                        <th scope="row">{stat.label}</th>
-                        <td>
-                          <DataValue datum={stat.datum} />
-                        </td>
-                        <td>Unavailable</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              ) : (
-                <div className="unavailable-state">
-                  <h3>{tab} unavailable</h3>
-                  <p>
-                    {tab === 'Game Log'
-                      ? 'No game-log provider is connected.'
-                      : 'No verified source supplies this breakdown.'}
-                  </p>
-                </div>
-              )}
-            </div>
-          </Panel>
-        </div>
-        <div className="profile-middle">
-          <Panel className="profile-outlook">
-            <h2>Fantasy Outlook</h2>
-            {[
-              'Weekly projection',
-              'Rest of season projection',
-              'Ownership',
-              'Start / sit advice',
-              'Trade value',
-            ].map((label) => (
-              <div className="info-row" key={label}>
-                <span>{label}</span>
-                <DataValue
-                  datum={{
-                    state: 'unsupported',
-                    reason: 'No verified projection or advice provider is implemented.',
-                  }}
-                />
-              </div>
-            ))}
-            <p className="muted">Synthetic averages are not forecasts.</p>
-          </Panel>
+              <p className="muted">Synthetic averages are not forecasts.</p>
+            </Panel>
+          )}
           <Panel className="profile-impact">
             <h2>Schedule Impact</h2>
             <div className="impact-days">

@@ -7,6 +7,7 @@ import { Button, DataValue, Panel, TeamMark } from '../components/primitives';
 import { Tabs } from '../components/Tabs';
 import { overviewFixture } from '../fixtures/overview';
 import { ComparisonWeek } from '../components/ComparisonWeek';
+import { canUseManualPlan, PreparePlan } from '../components/ManualPlan';
 import type { Datum, Player } from '../view-model';
 import { getPlayerPhoto, teamAssets } from '../media';
 import '../planner-comparison.css';
@@ -51,6 +52,11 @@ function PlayerCard({
       </div>
       <div className="comparison-player-copy">
         <h2>{player.name}</h2>
+        {player.identitySource === 'yahoo' && (
+          <p className="returned-player-reference">
+            Returned player reference: <span>{player.id}</span>
+          </p>
+        )}
         <p>
           {player.number === undefined ? 'Number unknown' : `#${player.number}`} &nbsp; | &nbsp;{' '}
           {player.position}
@@ -152,15 +158,21 @@ export default function PlayerComparison({
   selectedId,
   local,
   comparisonStart,
+  context,
 }: ScreenProps & { selectedId?: string; comparisonStart?: string }) {
   const observed = isObservation(local?.view);
-  const initialLeft =
-    players.find((player) => player.id === selectedId) ??
-    players.find((player) => player.nhlId === 8479318) ??
-    players[0];
-  const initialRight =
-    players.find((player) => player.nhlId === 8477492 && player.id !== initialLeft?.id) ??
-    players.find((player) => player.id !== initialLeft?.id);
+  const exactReturn = !!context?.comparisonRightId;
+  const initialLeft = exactReturn
+    ? players.find((player) => player.id === selectedId)
+    : (players.find((player) => player.id === selectedId) ??
+      players.find((player) => player.nhlId === 8479318) ??
+      players[0]);
+  const initialRight = exactReturn
+    ? players.find(
+        (player) => player.id === context.comparisonRightId && player.id !== initialLeft?.id,
+      )
+    : (players.find((player) => player.nhlId === 8477492 && player.id !== initialLeft?.id) ??
+      players.find((player) => player.id !== initialLeft?.id));
   const [leftId, setLeftId] = useState(initialLeft?.id ?? '');
   const [rightId, setRightId] = useState(initialRight?.id ?? '');
   const [query, setQuery] = useState('');
@@ -172,10 +184,9 @@ export default function PlayerComparison({
         ? (local?.view?.planningWindow?.start ?? local?.view?.schedule?.start ?? '')
         : overviewFixture.weekStart),
   );
+  const [reviewDate, setReviewDate] = useState(context?.reviewDate ?? start);
   const left = players.find((player) => player.id === leftId) ?? initialLeft;
-  const right =
-    players.find((player) => player.id === rightId) ??
-    players.find((player) => player.id !== left?.id);
+  const right = players.find((player) => player.id === rightId);
   const queries = [search, query].map((value) => value.trim().toLocaleLowerCase('en-US'));
   const choices = players.filter((player) => {
     const identity = `${player.name} ${player.team}`.toLocaleLowerCase('en-US');
@@ -201,6 +212,7 @@ export default function PlayerComparison({
           {options.map((option) => (
             <option key={option.id} value={option.id}>
               {option.name} · {option.team} · {option.position}
+              {observed ? ` · ${option.id}` : ''}
             </option>
           ))}
         </select>
@@ -244,13 +256,15 @@ export default function PlayerComparison({
             onChange={(event) => setQuery(event.target.value)}
           />
         </label>
-        <label>
-          Statistics view
-          <select value={mode} onChange={(event) => setMode(event.target.value as Mode)}>
-            <option value="totals">Supplied totals</option>
-            <option value="per-game">Per game</option>
-          </select>
-        </label>
+        {(!observed || tab === 'Statistics') && (
+          <label>
+            Statistics view
+            <select value={mode} onChange={(event) => setMode(event.target.value as Mode)}>
+              <option value="totals">Supplied totals</option>
+              <option value="per-game">Per game</option>
+            </select>
+          </label>
+        )}
         <span className="comparison-provenance">
           {observed
             ? 'Performance unavailable; no provider statistics supplied'
@@ -269,7 +283,7 @@ export default function PlayerComparison({
         >
           {picker('left', left)}
           <PlayerCard player={left} side="left" onProfile={() => onNavigate('profile', left.id)} />
-          <Summary player={left} />
+          {!observed && <Summary player={left} />}
         </section>
         <div className="comparison-vs">
           <strong aria-hidden="true">VS</strong>
@@ -294,7 +308,7 @@ export default function PlayerComparison({
             side="right"
             onProfile={() => onNavigate('profile', right.id)}
           />
-          <Summary player={right} />
+          {!observed && <Summary player={right} />}
         </section>
       </div>
       <Tabs
@@ -323,12 +337,44 @@ export default function PlayerComparison({
           </div>
         )}
         {tab === 'Schedule' && (
-          <ComparisonWeek
-            players={[left, right]}
-            local={local}
-            start={start}
-            onStartChange={setStart}
-          />
+          <>
+            <ComparisonWeek
+              players={[left, right]}
+              local={local}
+              start={start}
+              onStartChange={(next) => {
+                setStart(next);
+                setReviewDate(next);
+              }}
+            />
+            {canUseManualPlan(local) && (
+              <section className="panel manual-plan" aria-label="Prepare comparison review">
+                <h2>Review this pair</h2>
+                <label>
+                  Comparison review date
+                  <input
+                    type="date"
+                    value={reviewDate}
+                    min={start}
+                    max={new Date(Date.parse(`${start}T12:00:00Z`) + 6 * 86400000)
+                      .toISOString()
+                      .slice(0, 10)}
+                    onChange={(event) => setReviewDate(event.target.value)}
+                  />
+                </label>
+                <PreparePlan
+                  players={[left, right]}
+                  local={local}
+                  onNavigate={onNavigate}
+                  date={reviewDate}
+                  start={start}
+                  origin="comparison"
+                >
+                  Prepare comparison review
+                </PreparePlan>
+              </section>
+            )}
+          </>
         )}
         {tab === 'History' && (
           <Panel className="comparison-history">

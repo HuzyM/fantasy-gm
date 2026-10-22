@@ -7,6 +7,7 @@ import { RosterTable } from '../components/RosterTable';
 import { PlayerInspection } from '../components/PlayerInspection';
 import { ScreenHeading } from '../components/ScreenHeading';
 import { Button, DataValue, Panel, TeamMark } from '../components/primitives';
+import { PreparePlan } from '../components/ManualPlan';
 
 function SlotSection({
   title,
@@ -61,10 +62,18 @@ function SlotSection({
     </section>
   );
 }
-export default function MyRoster({ search, players, onNavigate, onNotice, local }: ScreenProps) {
+export default function MyRoster({
+  search,
+  players,
+  onNavigate,
+  onNotice,
+  local,
+  selectedId,
+  context,
+}: ScreenProps) {
   const observed = isObservation(local?.view);
   const [group, setGroup] = useState<PositionGroup>('all');
-  const [selected, setSelected] = useState<string | undefined>(players[0]?.id);
+  const [selected, setSelected] = useState<string | undefined>(selectedId ?? players[0]?.id);
   const player = players.find((p) => p.id === selected);
   const filteredPlayers = filterPlayers(players, search, group);
   const slot = (p: Player) =>
@@ -154,7 +163,22 @@ export default function MyRoster({ search, players, onNavigate, onNotice, local 
             />
             <Panel className="read-only-actions">
               <h2>Roster actions</h2>
+              {observed && (
+                <p className="returned-player-reference">
+                  Returned player reference: <span>{player.id}</span>
+                </p>
+              )}
               <p>Transactions and lineup changes are outside this read-only app.</p>
+              <PreparePlan
+                players={[player]}
+                local={local}
+                onNavigate={onNavigate}
+                date={context?.reviewDate ?? local?.view?.planningWindow?.start ?? ''}
+                start={context?.comparisonStart ?? local?.view?.planningWindow?.start ?? ''}
+                origin="roster"
+              >
+                Prepare roster review
+              </PreparePlan>
               <Button disabled>Set lineup</Button>
               <Button disabled>Add / drop / trade</Button>
             </Panel>

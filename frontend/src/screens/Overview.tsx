@@ -9,6 +9,7 @@ import { daysForWeek, overviewFixture } from '../fixtures/overview';
 import type { PositionGroup } from '../view-model';
 import { filterPlayers, shiftWeek } from '../view-model';
 import { isObservation, scheduleDays } from '../api';
+import { Button } from '../components/primitives';
 
 export default function Overview({
   search,
@@ -19,7 +20,7 @@ export default function Overview({
 }: ScreenProps) {
   const observed = isObservation(local?.view);
   const loadedStart = observed
-    ? (local?.view?.schedule?.start ?? new Date().toISOString().slice(0, 10))
+    ? (local?.view?.planningWindow?.start ?? local?.view?.schedule?.start ?? '')
     : overviewFixture.weekStart;
   const [group, setGroup] = useState<PositionGroup>('all');
   const [selectedId, setSelectedId] = useState<string | undefined>(players[0]?.id);
@@ -41,6 +42,33 @@ export default function Overview({
   }
   return (
     <>
+      {observed && (
+        <section className="panel manual-plan" aria-label="Weekly roster review">
+          <h1>Weekly roster review</h1>
+          <p>
+            {loadedStart} – {local?.view?.planningWindow?.end ?? local?.view?.schedule?.end} ·
+            America/Toronto. Review returned roster information, compare observed team games and
+            prepare your manual plan.
+          </p>
+          <p>
+            {!local?.view?.roster
+              ? 'Schedule only: no owned Yahoo roster loaded; owned-player planning is unavailable. This does not establish the complete review journey.'
+              : !local.view.schedule
+                ? 'Yahoo roster only: no schedule observations loaded. Manual verification remains possible; the complete schedule review journey is unavailable.'
+                : 'Loaded observations remain partial or unverified. Team games do not confirm appearances, lineup legality or scoring advantage.'}
+          </p>
+          <div className="manual-plan-actions">
+            <Button onClick={() => onNavigate('planner')}>Review planning window</Button>
+            <Button onClick={() => onNavigate('comparison', selectedId)}>
+              Compare observed schedules
+            </Button>
+          </div>
+          <p>
+            Performance, injury reports and league competition are unavailable in this observation.
+            No demonstration scores or advice are substituted.
+          </p>
+        </section>
+      )}
       <WeekSchedule
         days={observed ? scheduleDays(start, local?.view) : daysForWeek(start)}
         start={start}
