@@ -167,9 +167,10 @@ it('keeps an exact pair and date through selection, swaps, search, profile navig
   expect(
     screen.getByText(/Compared pair: Same Name · invented-first \/ Same Name · invented-third/),
   ).toBeVisible();
-  await user.type(screen.getByLabelText('Review action'), 'Check pair');
+  await user.click(screen.getByLabelText('Review action'));
+  await user.paste('Check pair');
   await user.clear(screen.getByLabelText('Reason'));
-  await user.type(screen.getByLabelText('Reason'), 'My reason');
+  await user.paste('My reason');
   await user.click(screen.getByRole('button', { name: 'Add review item' }));
   await user.click(screen.getByRole('button', { name: 'Reopen context for item 1' }));
   expect(screen.getByLabelText('First player')).toHaveValue('invented-first');
@@ -177,7 +178,8 @@ it('keeps an exact pair and date through selection, swaps, search, profile navig
   expect(screen.getByLabelText('Comparison review date')).toHaveValue('2027-01-02');
   await user.click(screen.getByRole('button', { name: 'Swap players' }));
   await user.selectOptions(screen.getByLabelText('Second player'), 'invented-second');
-  await user.type(screen.getByLabelText('Find a comparison player'), 'hide all');
+  await user.click(screen.getByLabelText('Find a comparison player'));
+  await user.paste('hide all');
   await user.click(screen.getByRole('button', { name: 'Next comparison week' }));
   expect(screen.getByRole('button', { name: 'Prepare comparison review' })).toBeDisabled();
   await user.click(
@@ -194,7 +196,7 @@ it('keeps an exact pair and date through selection, swaps, search, profile navig
   expect(within(item).getByText('My reason')).toBeVisible();
   await user.click(screen.getByRole('button', { name: 'Edit item 1' }));
   await user.clear(screen.getByLabelText('Review action'));
-  await user.type(screen.getByLabelText('Review action'), 'Check both');
+  await user.paste('Check both');
   await user.click(screen.getByRole('button', { name: 'Save review item' }));
   await user.click(screen.getByRole('button', { name: 'Mark item 1 reviewed' }));
   expect(within(item).getByText('Reviewed')).toBeVisible();
