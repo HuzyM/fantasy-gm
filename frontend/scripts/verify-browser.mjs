@@ -1,3 +1,4 @@
+import { browserOrigin, browserPort } from './browser-server.mjs';
 import assert from 'node:assert/strict';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
@@ -8,7 +9,9 @@ import { preview } from 'vite';
 const require = createRequire(import.meta.url);
 const output = new URL('../output/playwright/', import.meta.url);
 await mkdir(output, { recursive: true });
-const server = await preview({ preview: { host: '127.0.0.1', port: 4173, strictPort: true } });
+const server = await preview({
+  preview: { host: '127.0.0.1', port: browserPort, strictPort: true },
+});
 let browser;
 try {
   browser = await chromium.launch({
@@ -23,11 +26,11 @@ try {
     if (message.type() === 'error') errors.push(message.text());
   });
   await page.route('**/*', (route) => {
-    if (new URL(route.request().url()).origin === 'http://127.0.0.1:4173') return route.continue();
+    if (new URL(route.request().url()).origin === browserOrigin) return route.continue();
     external.push(route.request().url());
     return route.abort();
   });
-  await page.goto('http://127.0.0.1:4173/');
+  await page.goto(browserOrigin);
   await page.evaluate(() => document.fonts.ready);
   await page.waitForFunction(() => Array.from(document.images).every((image) => image.complete));
   await page
@@ -146,10 +149,10 @@ try {
   await page.getByRole('button', { name: 'Close navigation', exact: true }).click();
 
   const axeSource = await readFile(require.resolve('axe-core/axe.min.js'), 'utf8');
-  await page.route('http://127.0.0.1:4173/axe-check.js', (route) =>
+  await page.route(`${browserOrigin}/axe-check.js`, (route) =>
     route.fulfill({ contentType: 'application/javascript', body: axeSource }),
   );
-  await page.addScriptTag({ url: 'http://127.0.0.1:4173/axe-check.js' });
+  await page.addScriptTag({ url: `${browserOrigin}/axe-check.js` });
   const accessibility = [];
   for (const width of [1672, 390]) {
     await page.setViewportSize({ width, height: 941 });

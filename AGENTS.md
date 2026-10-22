@@ -15,6 +15,9 @@ See `docs/agents/triage-labels.md`.
 Use a single-context layout: root `GLOSSARY.md` and `docs/adr/`.
 See `docs/agents/domain.md`.
 
+For browser lifecycle review, see `docs/agents/browser-review.md`.
+For PR status and worktree finalization, see `docs/ci-quality-gates.md`.
+
 These workflow conventions supplement existing project documentation;
 they do not override repository privacy, provider, authorization,
 testing or release requirements.

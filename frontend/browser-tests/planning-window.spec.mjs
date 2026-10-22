@@ -1,3 +1,4 @@
+import { browserOrigin } from '../scripts/browser-server.mjs';
 import { test, expect } from 'playwright/test';
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
@@ -67,7 +68,7 @@ async function protocol(page, view) {
   });
   await page.clock.setFixedTime(new Date('2030-07-01T02:30:00Z'));
   await page.route('**/*', (route) => {
-    if (new URL(route.request().url()).origin === 'http://127.0.0.1:4173') return route.continue();
+    if (new URL(route.request().url()).origin === browserOrigin) return route.continue();
     external.push(route.request().url());
     return route.abort();
   });

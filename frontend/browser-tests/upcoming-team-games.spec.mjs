@@ -1,3 +1,4 @@
+import { browserOrigin } from '../scripts/browser-server.mjs';
 import { test, expect } from 'playwright/test';
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
@@ -12,8 +13,7 @@ for (const width of [1672, 390]) {
     page.on('pageerror', (error) => errors.push(error.message));
     await page.clock.install({ time: new Date('2026-11-01T05:00:00Z') });
     await page.route('**/*', (route) => {
-      if (new URL(route.request().url()).origin === 'http://127.0.0.1:4173')
-        return route.continue();
+      if (new URL(route.request().url()).origin === browserOrigin) return route.continue();
       external.push(route.request().url());
       return route.abort();
     });

@@ -1,3 +1,4 @@
+import { browserOrigin } from '../scripts/browser-server.mjs';
 import { test, expect } from 'playwright/test';
 // Synthetic protocol inputs only. Never run the human private launcher in automation.
 const view = {
@@ -33,7 +34,7 @@ for (const width of [1672, 390])
     const requests = [];
     page.on('pageerror', (e) => errors.push(e.message));
     await page.route('**/*', (r) => {
-      if (new URL(r.request().url()).origin === 'http://127.0.0.1:4173') return r.continue();
+      if (new URL(r.request().url()).origin === browserOrigin) return r.continue();
       external.push(r.request().url());
       return r.abort();
     });
