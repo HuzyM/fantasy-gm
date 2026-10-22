@@ -34,7 +34,7 @@ jobs:
       - name: Offline Python regressions
         run: uv run --locked pytest --junitxml=test-results/python-linux.xml
       - name: Python lint and formatting
-        run: uv run --locked ruff check src tests && uv run --locked ruff format --check src tests
+        run: uv run --locked ruff check src tests scripts/pr_status.py && uv run --locked ruff format --check src tests scripts/pr_status.py
       - name: Python dependency audit (advisory)
         id: python-audit
         if: ${{ !cancelled() }}

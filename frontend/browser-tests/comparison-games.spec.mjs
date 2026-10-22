@@ -1,3 +1,4 @@
+import { browserOrigin } from '../scripts/browser-server.mjs';
 import { test, expect } from 'playwright/test';
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
@@ -118,7 +119,7 @@ test('weekly game comparison preserves unavailable source eligibility and exclud
   );
   const external = [];
   await page.route('**/*', (route) => {
-    if (new URL(route.request().url()).origin === 'http://127.0.0.1:4173') return route.continue();
+    if (new URL(route.request().url()).origin === browserOrigin) return route.continue();
     external.push(route.request().url());
     return route.abort();
   });
@@ -192,8 +193,7 @@ for (const [size, width, height] of [
       }
     });
     await page.route('**/*', (route) => {
-      if (new URL(route.request().url()).origin === 'http://127.0.0.1:4173')
-        return route.continue();
+      if (new URL(route.request().url()).origin === browserOrigin) return route.continue();
       external.push(route.request().url());
       return route.abort();
     });

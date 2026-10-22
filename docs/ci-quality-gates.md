@@ -43,6 +43,36 @@ private profiles, storage files, tokens, traces of real sessions or environment
 dumps are uploaded. The metadata allowlist contains OS/image, Node, browser,
 Playwright and bundled font versions only.
 
+## PR inspection and worktree finalization
+
+Use `python scripts/pr_status.py <number>` from the repository for routine PR
+status. It queries only the PR number/state/head and check metadata, prints the
+three required contexts, and rejects a head change during the query. Missing,
+duplicate, skipped, failed or unfinished contexts never count as passed. It does
+not fetch bodies, comments or diffs; read the specific diff/files only when needed.
+With connector tools, project the needed fields from structured results before
+printing, rather than dumping the full envelope. Scope `rg` to known paths and
+symbols, with a bounded output budget; narrow any truncated search.
+
+Keep implementation and integration worktrees available until all of these hold:
+
+1. Independent review is completed and its findings are resolved on the current
+   full commit SHA. A review request or review of an older SHA is insufficient.
+2. The three required CI jobs have passed on that same SHA. A queued/running job
+   or a green run for an earlier push is insufficient. After any commit, refresh
+   both review and CI evidence proportionately before cleanup.
+3. The commit is preserved in the remote PR branch or merged main, and the exact
+   worktree is clean, including untracked files. Confirm the repository, branch,
+   absolute path and `git worktree list` entry before removing anything.
+
+The summary command supplies CI evidence only; it does not establish independent
+review or authorize merging/deletion. Immediately before cleanup, compare its
+head with the full local SHA and the completed review evidence. Preserve paths
+with ongoing work, unresolved CI/review, or ambiguous ownership. Do not delete a
+checkout to save space and recreate it while delivery checks are still running.
+On Windows, inspect dependency junctions separately and unlink only the junction
+itself; never recursively delete through a shared dependency target.
+
 ## Qualified Windows visual comparisons
 
 The approved `docs/frontend/win32` images were generated locally with a system

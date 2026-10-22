@@ -1,3 +1,4 @@
+import { browserOrigin, browserPort } from './scripts/browser-server.mjs';
 import { defineConfig } from 'playwright/test';
 export default defineConfig({
   testDir: './browser-tests',
@@ -9,16 +10,16 @@ export default defineConfig({
   outputDir: 'output/screens',
   snapshotPathTemplate: '../docs/frontend/{platform}/{arg}{ext}',
   use: {
-    baseURL: 'http://127.0.0.1:4173',
+    baseURL: browserOrigin,
     headless: true,
     channel: process.env.PLAYWRIGHT_CHANNEL || 'chrome',
   },
   webServer: {
     command:
       process.env.LOCAL_API === '1'
-        ? `npm run build && "${process.env.PYTHON_EXECUTABLE || (process.platform === 'win32' ? '../.venv/Scripts/python.exe' : '../.venv/bin/python')}" -B -m fantasy_gm.web --port 4173`
-        : 'npm run build && npm run preview -- --port 4173 --strictPort',
-    url: 'http://127.0.0.1:4173',
+        ? `npm run build && "${process.env.PYTHON_EXECUTABLE || (process.platform === 'win32' ? '../.venv/Scripts/python.exe' : '../.venv/bin/python')}" -B -m fantasy_gm.web --port ${browserPort}`
+        : `npm run build && npm run preview -- --port ${browserPort} --strictPort`,
+    url: browserOrigin,
     reuseExistingServer: false,
   },
 });
