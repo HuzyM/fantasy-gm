@@ -19,7 +19,7 @@ claimed. A later runtime change requires a new candidate and renewed evidence.
 
 | Gate | Current verdict | Evidence still required |
 | --- | --- | --- |
-| Engineering readiness: A1–A14 | Local checks below passed; browser/final-head evidence pending at authoring | All three required checks on the final PR head; completed Standards/implementation and Spec reviews with actionable findings resolved |
+| Engineering readiness: A1–A14 | Local offline and synthetic browser checks below passed; final-head evidence pending at authoring | All three required checks on the final PR head; completed Standards/implementation and Spec reviews with actionable findings resolved |
 | Human source correctness: A15 | Pending; no private acceptance run performed for #30 | Separately authorized human source reconciliation and relevant session-clearing checks |
 | Practical usefulness: A16–A17 | Pending; zero of three required sessions recorded | Three private human reviews, each within ten minutes after loads, reduced effort in at least two, zero unsupported claims; coarse evidence only |
 | Documentation and distribution: A18 | Operating/acceptance instructions supplied; distribution conditional | Review instructions with engineering evidence; resolve applicable provider/asset rights before any public distribution |
@@ -56,12 +56,12 @@ failure and does not imply the later PR evidence was already collected.
 | --- | --- |
 | Complete offline Python tests, Ruff lint/format and native strict mypy | PASS: 847 Python tests; Ruff lint, format (81 files), native strict mypy (80 files). Python evidence: `test-results/python-windows-local-rerun.xml` |
 | Frontend formatting, unit tests, TypeScript and production build | PASS: formatting; 159 tests in 19 files; TypeScript/production build during browser startup |
-| Complete synthetic production-browser journey and retained Overview regression | Pending rerun |
-| Blocking Windows visual comparisons and WCAG A/AA assertions | Pending rerun; retain 32 comparisons and existing tolerances |
+| Complete synthetic production-browser journey and retained Overview regression | PASS: 80/80 browser cases (3.0 minutes); separate Overview regression passed at all four widths with fixture interactions, zero external requests/console errors and axe checks |
+| Blocking Windows visual comparisons and WCAG A/AA assertions | PASS: 32/32 visual comparisons matched; blocking WCAG A/AA, layout and privacy assertions passed with existing tolerances |
 | `Python Linux`, `Python Windows and browser`, `Frontend and local API` | Pending final PR head; a green earlier head is insufficient |
 | Advisory Python/npm audits, findings and platform limits | Current local npm audit: zero reported vulnerabilities. Python and final-head hosted audit reports pending; historical hosted results above only |
 | Independent Standards/implementation and Spec review | Pending completed reviews of final revision; requested reviews are insufficient |
-| Scope/privacy diff and protected-file integrity | Pending final check; no runtime boundary change is intended |
+| Scope/privacy diff and protected-file integrity | Documentation-only diff; protected-file hashes unchanged at authoring. Recheck final PR scope and hashes before delivery |
 
 The local environment used Python 3.12.15, Node 22.15.0 and uv 0.13.1; the
 hosted workflow pins uv 0.12.23. Locked offline dependency installs succeeded.
@@ -70,9 +70,14 @@ The initial restricted-runner Python attempt was inconclusive (814 passed,
 denials. The complete rerun under normal host permissions passed all 847 tests;
 the test fixtures retained their provider-network and environment guards. This
 permission adjustment authorized no live provider call or private launcher run.
-The complete 80-case browser run and its blocking visual/accessibility checks
-were still pending at this snapshot; `frontend/output/browser-results.json` is
-the expected local result path, not proof of a completed pass.
+The complete browser run passed with `LOCAL_API=1`, `CI=1` and
+`VISUAL_COMPARE=1` on distinct local port 4190; the retained Overview regression
+used port 4191. The browser environment was Windows 10.0.26200, Node 22.15.0,
+Chromium 156.0.8078.4, Playwright 1.64.1 and bundled Barlow/Barlow Condensed 5.3.0.
+Local evidence is in `frontend/output/browser-results.json`,
+`frontend/output/visual/*.json` and `frontend/output/playwright/environment.json`.
+These are local synthetic results on the runtime candidate, not hosted checks
+on a future documentation/PR revision.
 
 Use the existing [blocking verification workflow](ci-quality-gates.md), including
 its exact-head status summary. Browser verification uses fabricated protocol data
