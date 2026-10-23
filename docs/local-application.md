@@ -29,6 +29,8 @@ uv run python -B -m fantasy_gm.web --private --interactive
 ```
 
 The existing Yahoo OAuth configuration is read only after interactive confirmation.
+The exact private confirmation is `APPROVE PRIVATE BROWSER`. A previously approved
+engineering change or synthetic test run does not authorize this human session.
 The existing hidden terminal OAuth flow performs one authorization exchange, then
 at most four Fantasy GETs: league discovery, owned teams, league membership and one
 selected owned team's roster. There are no refreshes, retries or browser OAuth
@@ -170,6 +172,109 @@ correctness/usefulness session still needs separate authorization and the human-
 privacy precautions above; do not share private observations, screenshots or links
 with AI/recording tools. Existing session expiry, reload loss and clearing rules
 continue to apply.
+
+## Human release acceptance runbook
+
+This is an instruction for a future separately authorized human operation, not
+permission to run it now. The [release-candidate record](release-acceptance.md)
+identifies the exact runtime revision and independent engineering gates. Human
+correctness and usefulness remain pending until actually performed. Do not launch
+private mode through an agent or ask an agent to watch or inspect its output.
+
+1. Obtain the owner's explicit authorization for the particular human sessions,
+   chosen windows and total request budget before beginning. Each private launch
+   is bounded to one authorization exchange and at most four Fantasy GETs
+   (discovery, owned teams, membership and one selected owned roster). Each
+   separately approved public window adds at most two existing PuckAPI requests,
+   normally six credits at reviewed rates. A new launch, alternate window or
+   failure recovery needs authorization within that total budget; three usefulness
+   sessions are not covered by a single launch approval. Use existing free-tier
+   access only. Do not use paid/trial access, query accounts/balances, buy credits,
+   retry or enable automatic refresh. Stop if the approved access or budget is
+   unavailable; the cost estimate is not a checked balance.
+2. Close AI/MCP observation, automated browsers, recording/transcription, remote
+   views and screen sharing. Use a private human terminal and browser. Keep these
+   tools closed throughout source reconciliation and planning. Do not save a
+   transcript, screenshot, provider response, private plan or private report.
+3. Use the engineering-verified candidate and built frontend. For the complete
+   journey, the human runs from the repository root:
+
+   ```powershell
+   uv run python -B -m fantasy_gm.web --private --public-schedule --interactive
+   ```
+
+   Read the private consent text, authenticate through the existing hidden
+   terminal flow and select only the intended discovered league and owned team.
+   Choose a start in `YYYY-MM-DD` form, including a deliberate nondefault start
+   when checking window selection. Confirm the displayed start/end are exactly
+   seven inclusive America/Toronto dates, then separately approve the explained
+   public schedule cost. Use `CANCEL` to stop if any selection or cost is wrong.
+   Rejection, unsupported responses and exhausted credits must remain sanitized;
+   do not try again without remaining explicit authorization. Yahoo-only and
+   schedule-only modes remain useful degraded modes, but cannot accept the full
+   release journey.
+4. Open only the printed numeric-loopback browser link and keep it private. After
+   loads finish, start the review timer for a usefulness session. In **My Roster**,
+   privately reconcile the selected team and returned fields against the owner's
+   Yahoo page. Distinguish returned entries from a complete roster, eligibility
+   from assigned slots, and reported affiliation from verified NHL identity.
+   Do not export data, inspect network payloads or capture credentials to do this.
+5. In **Schedule Planner**, confirm the original dates/timezone, inspect **Daily
+   matchups** and **Roster week**, and privately compare representative displayed
+   games with their source: opponent, home/away, local start time and state where
+   available. Check the qualifications for excluded/disputed games, missing times,
+   unverified affiliations and partial/unloaded coverage. No qualifying game
+   observed is not proof of an off-day; team games do not prove appearances.
+   Sample agreement does not certify complete coverage or roster/rule semantics.
+6. Use **Prepare roster review**, **Prepare Planner review** or **Prepare comparison
+   review** and the **Manual plan** controls described above. Confirm the exact
+   returned identity or ordered pair, date and original planning window after
+   adding/reopening an item, navigating, filtering or swapping the comparison.
+   Check Edit, Mark reviewed/Return to pending and Remove using only the current
+   in-memory plan. A verification action for an unsupported affiliation needs no
+   invented game. **Record no action needed** is valid without a minimum item
+   count. Unknown data stays unknown and reviewed means acknowledgement only.
+   Make any chosen real changes manually in Yahoo; the plan never sends them.
+7. Finish the review timer when the intended review list or no-action outcome is
+   ready. Each of three sessions must finish within ten minutes after loads, with
+   reduced effort reported in at least two sessions and zero unsupported claims
+   of completeness, player participation, lineup legality or scoring advantage.
+   A mismatch affecting a claimed fact blocks correctness acceptance until
+   corrected or accurately represented as disputed/unavailable. A failed
+   usefulness gate requires product reconsideration; do not invent success.
+8. After timing, check relevant lifecycle behavior within the separately approved
+   launches: reload loses capability and plan; reopening a still-valid launcher
+   link may reload observations but restores no plan. Disconnect clears the local
+   session; a server restart cannot restore it. Where authorized, observe the
+   existing 20-minute expiry rather than extending it with planning. After browser
+   unavailability is observed, revisit history and visibly reopen any available
+   plan/navigation region before checking old items are absent; a closed panel
+   alone does not prove clearing. Source/session replacement cannot restore old
+   items. Do not authorize another provider load just to exercise these cases;
+   arrange any needed separate launches explicitly. Clearing is observed browser
+   behavior, not a guarantee for suspended browsers or physical memory erasure.
+9. Stop the launcher and close private pages before reconnecting observation
+   tools. Share only the coarse fields below. Do not send account/roster/plan
+   fields, private counts or structural details, player references, dates, window
+   choices, links/capabilities, tokens, screenshots or provider bodies to an AI
+   tool or issue. Add no telemetry or saved private acceptance dataset.
+
+The only shareable acceptance report is a coarse summary such as:
+
+```text
+Human source correctness: PASS / FAIL / NOT PERFORMED
+Relevant session clearing: PASS / FAIL / NOT PERFORMED
+Session 1: PASS / FAIL / NOT PERFORMED; review duration: __; reduced effort: YES / NO / NOT ASSESSED
+Session 2: PASS / FAIL / NOT PERFORMED; review duration: __; reduced effort: YES / NO / NOT ASSESSED
+Session 3: PASS / FAIL / NOT PERFORMED; review duration: __; reduced effort: YES / NO / NOT ASSESSED
+Zero unsupported claims: PASS / FAIL / NOT ASSESSED
+```
+
+Do not fill this with expected results. A private failure can be reported simply
+as FAIL; no private reproduction detail is needed. Keep the release unaccepted
+and #30/#26 open while any required result is pending or failed. Personal local
+acceptance does not clear provider/asset rights for public distribution; see the
+[distribution gate](release-acceptance.md#release-decision-and-rights).
 
 ## Request boundary and verification
 
