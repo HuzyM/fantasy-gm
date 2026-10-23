@@ -6,7 +6,7 @@ import { Button, Panel, TeamMark } from '../components/primitives';
 import { PlayerHeadshot } from '../components/PlayerHeadshot';
 import { Tabs } from '../components/Tabs';
 import { RosterWeek } from '../components/RosterWeek';
-import { canUseManualPlan, ManualPlan } from '../components/ManualPlan';
+import { canUseManualPlan, ManualPlan, PreparePlan } from '../components/ManualPlan';
 import { daysForWeek, overviewFixture } from '../fixtures/overview';
 import { dateLabel, shiftWeek } from '../view-model';
 import type { Game, Player } from '../view-model';
@@ -44,20 +44,23 @@ export default function SchedulePlanner({
   onNavigate,
   onNotice,
   local,
+  context,
+  selectedId,
 }: ScreenProps) {
   const observed = isObservation(local?.view);
   const unresolved = players.filter((player) => player.scheduleJoin === 'unverified').length;
   const loadedStart = observed
     ? (local?.view?.planningWindow?.start ?? local?.view?.schedule?.start ?? '')
     : overviewFixture.weekStart;
-  const [start, setStart] = useState(loadedStart);
-  const [date, setDate] = useState(loadedStart);
+  const [start, setStart] = useState(context?.comparisonStart ?? loadedStart);
+  const [date, setDate] = useState(context?.reviewDate ?? loadedStart);
+  const [reviewPlayer, setReviewPlayer] = useState(selectedId ?? players[0]?.id ?? '');
   const [selectedKey, setSelectedKey] = useState('');
   const [filter, setFilter] = useState('all');
   const [highlight, setHighlight] = useState(true);
   const [tab, setTab] = useState('Preview');
   const [view, setView] = useState('Daily matchups');
-  const [showPlan, setShowPlan] = useState(false);
+  const [showPlan, setShowPlan] = useState(context?.showPlan ?? false);
   const days = observed ? scheduleDays(start, local?.view) : daysForWeek(start);
   const selectedDay = days.find((day) => day.date === date) ?? days[0]!;
   const query = search.trim().toLocaleLowerCase('en-US');
@@ -153,6 +156,36 @@ export default function SchedulePlanner({
           <div id="manual-plan-panel" hidden={!showPlan}>
             {showPlan && <ManualPlan players={players} local={local} onNavigate={onNavigate} />}
           </div>
+          <section className="panel manual-plan" aria-label="Prepare Planner review">
+            <h2>Review selected date</h2>
+            <p>
+              {date} · {start} – {days[6]!.date} · America/Toronto. Verification is possible without
+              a supported team game.
+            </p>
+            <label>
+              Planner review player
+              <select
+                value={reviewPlayer}
+                onChange={(event) => setReviewPlayer(event.target.value)}
+              >
+                {players.map((player) => (
+                  <option key={player.id} value={player.id}>
+                    {player.name} · {player.id}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <PreparePlan
+              players={players.filter((player) => player.id === reviewPlayer)}
+              local={local}
+              onNavigate={onNavigate}
+              date={date}
+              start={start}
+              origin="planner"
+            >
+              Prepare Planner review
+            </PreparePlan>
+          </section>
         </>
       )}
       <section className="planner-week" aria-label="Planner week">
