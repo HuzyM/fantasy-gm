@@ -1,1 +1,1 @@
-"""Reserved for weekly roster optimization built on the domain layer."""
+"""Pure assignment solvers consuming explicitly supplied domain assumptions."""
