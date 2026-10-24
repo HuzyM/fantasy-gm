@@ -67,6 +67,21 @@ The candidate-state bound is `product(min(capacity, player_count) + 1)`; each pl
 considers each slot type for each state. Tuple copying/comparison also costs time
 proportional to the partial lineup length. To bound work, inputs exceeding 100,000
 capacity states or requiring over 10,000 digits of working precision are rejected.
+In addition, a conservative total-work estimate must not exceed 50,000,000:
+
+`player_count * state_bound * (slot_type_count + 1) * (lineup_bound + 1)`
+
+Here `lineup_bound = min(sum(effective_capacities), player_count)`. The estimate
+accounts for all player/state/slot visits and the lineup tuple copying/comparison
+factor. It is a preflight size safeguard, not a precise instruction count or a
+wall-clock guarantee. It may reject sparse inputs whose actual reachable work
+would be smaller. It raises `UnsupportedLineupError` before the DP begins; it
+never returns a partial or approximate optimum. Existing numeric limits still
+bound Decimal arithmetic separately. The 14-skater C2/LW2/RW2/D4 case estimates
+103,950 work units; even a fully flexible 30-skater, 16-slot C2/LW2/RW2/D4/F2/W2/UTIL2
+case estimates 14,871,600, leaving headroom under the limit. The old state limit
+alone would accept 100 fully flexible skaters with four slots of each of seven
+types (78,125 states); its 1,812,500,000 estimated units are now rejected.
 No approximation, truncated search or external solver is used.
 
 ## Rejections and verification
@@ -113,3 +128,66 @@ were not copied into this implementation or included in these test counts.
 The full offline suite ran with normal host permissions for its existing local
 async sockets and temporary folders; the repository's live-network guards stayed
 enabled. No private launcher, authentication or live provider request ran.
+
+
+## OPT-002A: daily Head-to-Head Points league regressions
+
+The representative synthetic league has **C=2, LW=2, RW=2, D=4**, with no
+UTIL/F/W slots or eligibility. Fourteen fictional available skaters supply ten
+starters and four bench alternatives, including C/LW, C/LW/RW and LW/RW forwards.
+All points are fabricated caller inputs; no Yahoo scoring or projection logic is
+implemented. Goalies, IR and IR+ remain outside this skater problem. Fourteen
+skaters is a synthetic test choice, not an inferred count of available real skaters.
+
+Regressions compare the complete assignment and tie policy against an independent
+exhaustive oracle using Fraction arithmetic. It enumerates occupant subsets for
+each position, omitting permutations of indistinguishable physical slots, then
+rejects players assigned twice. It uses no production helpers, DP or score pruning.
+The original physical-slot oracle and its 100 seeded cases remain in place.
+
+The supplied baseline totals 41.25. The unlocked optimum is 44.50; fixing a forward
+to LW (different from its current RW assignment) and a lower-value defender to D
+yields 43.25. Both cases require moving a flexible C/LW skater to LW to admit a
+stronger benched C. Reversed-input results match completely. A separate all-tied
+10-starter scenario preserves the supplied optimal baseline, including flexible
+positions and a lexically later starter over an equally valued bench alternative.
+The total-work safeguard has exact accepted/rejected boundary tests and rejects
+the dense 78,125-state problem described above without starting the DP.
+
+This covers one daily assignment at a time. Repeating it for seven dates is only
+a performance exercise; it does not impose weekly lineup locks or cross-day rules.
+**OPT-003 remains the next contract-qualification step:** establish scoring
+semantics, projection inputs and effective daily lock rules before any real-data
+integration or decision-quality claim. Goalie/reserve rules are unresolved.
+No Yahoo reads, OAuth, private session, provider request, UI, database or dependency
+changes are part of OPT-002A.
+
+OPT-002A local verification on October 24, 2026, Windows Python 3.12.15:
+
+| Check | Result |
+| --- | --- |
+| Optimizer pytest, bytecode/cache disabled | 51 passed in 1.56s |
+| Complete offline pytest, bytecode/cache disabled | 898 passed in 15.93s |
+| Ruff lint | All checks passed |
+| Ruff formatting | 84 files already formatted |
+| Strict mypy, cache disabled | No issues in 83 source files |
+
+The repository's live HTTP/DNS/socket guards remained enabled throughout tests.
+Hosted review/CI evidence is recorded on the PR at its exact head, separately
+from these local results. No merge or auto-merge is authorized by this slice.
+
+
+Performance used five samples of seven sequential calls, with the same fabricated
+inputs and interpreter for `ee61ded` and OPT-002A. Medians (seconds):
+
+| Synthetic problem | Prior implementation | With preflight limit |
+| --- | --- | --- |
+| 14 skaters, C2/LW2/RW2/D4, baseline supplied | 0.00696 | 0.00711 |
+| Same problem with two fixed starters | 0.00388 | 0.00399 |
+| 30 skaters, 16 slots, all seven positions explicitly eligible | 3.90115 | 3.89236 |
+
+The large stress case uses C2/LW2/RW2/D4/F2/W2/UTIL2. It is retained only to
+check supported generic-solver performance; it does not describe this league.
+These local measurements support negligible preflight overhead, not a portable
+latency guarantee. The actual league fixture stays far below one second for
+seven independent solves. No timing threshold is imposed on hosted CI.

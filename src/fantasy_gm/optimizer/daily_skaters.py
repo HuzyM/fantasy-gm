@@ -130,9 +130,18 @@ def _optimize(
     fixed = _assignments_by_player(locked, by_id, capacities)
     positions = tuple(sorted(capacities))
     limits = tuple(min(capacities[p], len(players)) for p in positions)
-    if prod(n + 1 for n in limits) > 100_000:
+    state_bound = prod(n + 1 for n in limits)
+    if state_bound > 100_000:
         raise UnsupportedLineupError(
             "Capacity state space exceeds supported limit of 100000"
+        )
+    # Bound all player/state/slot visits, including lineup tuple copying and
+    # comparison. This conservative preflight avoids partially solving a request.
+    lineup_bound = min(sum(limits), len(players))
+    work_bound = len(players) * state_bound * (len(positions) + 1) * (lineup_bound + 1)
+    if work_bound > 50_000_000:
+        raise UnsupportedLineupError(
+            "Estimated DP work exceeds supported limit of 50000000"
         )
     states = {tuple(0 for _ in positions): _Candidate(Decimal(0), 0, ())}
     for player in sorted(players, key=lambda p: p.player_id):

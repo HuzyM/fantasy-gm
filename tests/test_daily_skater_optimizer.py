@@ -2,7 +2,7 @@
 
 from decimal import MIN_EMIN, Decimal, Inexact, localcontext
 from fractions import Fraction
-from itertools import permutations, product
+from itertools import combinations, permutations, product
 from random import Random
 
 import pytest
@@ -450,3 +450,190 @@ def test_opt_001_hand_oracles(fixed: bool, total: str) -> None:
     result = optimize_daily_skaters(players, slots, locked=locked)
     assert result.projected_points == Decimal(total)
     assert tuple((a.player_id, a.position) for a in result.assignments) == expected[1]
+
+
+@pytest.fixture
+def daily_points_league() -> tuple[
+    tuple[SkaterProjection, ...],
+    tuple[SlotCapacity, ...],
+    tuple[LineupAssignment, ...],
+]:
+    """Fourteen fictional available skaters; supplied daily H2H Points only.
+
+    Ten starts and four bench alternatives. Goalies and IR/IR+ are outside
+    this input, without inferring their eligibility or effective lock rules.
+    """
+    players = (
+        player("fiction-a", "5.75", "C", "LW"),
+        player("fiction-b", "5.50", "C"),
+        player("fiction-c", "5.25", "C", "LW", "RW"),
+        player("fiction-d", "5.00", "LW", "RW"),
+        player("fiction-e", "4.75", "C"),
+        player("fiction-f", "4.50", "LW"),
+        player("fiction-g", "4.25", "RW"),
+        player("fiction-h", "4.00", "C", "RW"),
+        player("fiction-i", "3.75", "LW", "RW"),
+        player("fiction-j", "2.00", "D"),
+        player("fiction-k", "3.50", "D"),
+        player("fiction-l", "3.25", "D"),
+        player("fiction-m", "3.00", "D"),
+        player("fiction-n", "4.00", "D"),
+    )
+    slots = (
+        SlotCapacity(position="C", capacity=2),
+        SlotCapacity(position="LW", capacity=2),
+        SlotCapacity(position="RW", capacity=2),
+        SlotCapacity(position="D", capacity=4),
+    )
+    current = tuple(
+        assignment(key, position)
+        for key, position in (
+            ("fiction-a", "C"),
+            ("fiction-e", "C"),
+            ("fiction-c", "LW"),
+            ("fiction-f", "LW"),
+            ("fiction-d", "RW"),
+            ("fiction-g", "RW"),
+            ("fiction-j", "D"),
+            ("fiction-k", "D"),
+            ("fiction-l", "D"),
+            ("fiction-m", "D"),
+        )
+    )
+    return players, slots, current
+
+
+def league_exhaustive_oracle(
+    players: tuple[SkaterProjection, ...],
+    slots: tuple[SlotCapacity, ...],
+    current: tuple[LineupAssignment, ...],
+    locked: tuple[LineupAssignment, ...],
+) -> tuple[Fraction, tuple[tuple[str, str], ...]]:
+    """Enumerate every legal occupant subset per position, with Fraction sums.
+
+    Identical physical slots need no permutations. There is no DP, score pruning,
+    production helper use, or dependence on a solver-generated expected lineup.
+    """
+    options = []
+    for slot in slots:
+        eligible = tuple(
+            p.player_id for p in players if slot.position in p.eligible_positions
+        )
+        options.append(
+            tuple(
+                tuple((key, slot.position) for key in group)
+                for size in range(min(slot.capacity, len(eligible)) + 1)
+                for group in combinations(eligible, size)
+                if all(
+                    a.player_id in group for a in locked if a.position == slot.position
+                )
+            )
+        )
+    values = {p.player_id: Fraction(p.projected_points) for p in players}
+    before = {a.player_id: a.position for a in current}
+    best: tuple[Fraction, int, tuple[tuple[str, str], ...]] | None = None
+    for groups in product(*options):
+        pairs = tuple(sorted(pair for group in groups for pair in group))
+        after = dict(pairs)
+        if len(after) != len(pairs):
+            continue
+        total = sum((values[key] for key in after), Fraction())
+        changes = sum(before.get(key) != after.get(key) for key in values)
+        candidate = (-total, changes, pairs)
+        if best is None or candidate < best:
+            best = candidate
+    assert best is not None
+    return -best[0], best[2]
+
+
+@pytest.mark.parametrize("use_locks", (False, True))
+def test_daily_h2h_points_ten_slots_match_independent_oracle(
+    daily_points_league: tuple[
+        tuple[SkaterProjection, ...],
+        tuple[SlotCapacity, ...],
+        tuple[LineupAssignment, ...],
+    ],
+    use_locks: bool,
+) -> None:
+    players, slots, current = daily_points_league
+    locked = (
+        (assignment("fiction-d", "LW"), assignment("fiction-j", "D"))
+        if use_locks
+        else ()
+    )
+    expected = league_exhaustive_oracle(players, slots, current, locked)
+    result = optimize_daily_skaters(players, slots, current=current, locked=locked)
+    assert Fraction(result.projected_points) == expected[0]
+    assert tuple((a.player_id, a.position) for a in result.assignments) == expected[1]
+    assert len(result.assignments) == 10
+    assert len(result.benched_player_ids) == 4
+    assert all(a in result.assignments for a in locked)
+    assert {a.position for a in result.assignments} == {"C", "LW", "RW", "D"}
+    assert assignment("fiction-b", "C") in result.assignments
+    assert assignment("fiction-a", "LW") in result.assignments
+    assert result.baseline_points == Decimal("41.25")
+    assert result.projected_points == Decimal("43.25" if use_locks else "44.50")
+    assert (
+        result.estimated_improvement == result.projected_points - result.baseline_points
+    )
+    assert result == optimize_daily_skaters(
+        tuple(reversed(players)),
+        tuple(reversed(slots)),
+        current=tuple(reversed(current)),
+        locked=tuple(reversed(locked)),
+    )
+
+
+def test_daily_points_optimal_baseline_preserves_tied_starters_and_positions(
+    daily_points_league: tuple[
+        tuple[SkaterProjection, ...],
+        tuple[SlotCapacity, ...],
+        tuple[LineupAssignment, ...],
+    ],
+) -> None:
+    players, slots, current = daily_points_league
+    # All forwards tie; a lexically earlier bench player must not displace the
+    # current starter, nor should flexible current starters swap positions.
+    players = tuple(
+        p.model_copy(update={"projected_points": Decimal("3.5")}) for p in players
+    )
+    locked = (assignment("fiction-j", "D"),)
+    expected = league_exhaustive_oracle(players, slots, current, locked)
+    assert expected == (
+        Fraction(35),
+        tuple(sorted((a.player_id, a.position) for a in current)),
+    )
+    for ordered in (players, tuple(reversed(players))):
+        result = optimize_daily_skaters(
+            ordered, tuple(reversed(slots)), current=current, locked=locked
+        )
+        assert set(result.assignments) == set(current)
+        assert result.changes == ()
+        assert result.estimated_improvement == 0
+
+
+@pytest.mark.parametrize("count, accepted", ((2500, True), (2501, False)))
+def test_total_dp_work_limit_boundary(count: int, accepted: bool) -> None:
+    # 2500 * 100 * 2 * 100 = 50,000,000. The state count alone is only 100.
+    # Only one player can start, so the accepted boundary is cheap to execute.
+    players = (player("fiction-starter", "1", "C"),) + tuple(
+        player(f"fiction-bench-{i}", "1", "D") for i in range(count - 1)
+    )
+    slots = (SlotCapacity(position="C", capacity=99),)
+    if accepted:
+        result = optimize_daily_skaters(players, slots)
+        assert result.assignments == (assignment("fiction-starter", "C"),)
+    else:
+        with pytest.raises(UnsupportedLineupError, match="Estimated DP work"):
+            optimize_daily_skaters(players, slots)
+
+
+def test_total_work_rejects_dense_problem_below_state_space_limit() -> None:
+    positions = ("C", "LW", "RW", "D", "F", "W", "UTIL")
+    players = tuple(player(f"fiction-{i}", "1", *positions) for i in range(100))
+    slots = tuple(
+        SlotCapacity.model_validate({"position": p, "capacity": 4}) for p in positions
+    )
+    # 5**7 = 78,125 states passes the old isolated state-space safeguard.
+    with pytest.raises(UnsupportedLineupError, match="Estimated DP work"):
+        optimize_daily_skaters(players, slots)
